@@ -46,12 +46,19 @@ jobs:
           unzip \
           zlib1g-dev \
           libbz2-dev \
-          libncursesw6
+          libncursesw6 \
+          autoconf \
+          libtool \
+          automake
 
     - name: Instalar Buildozer y Cython
       run: |
         pip install --upgrade pip
         pip install --upgrade cython==0.29.36 buildozer
+
+    - name: Limpiar compilaciones anteriores
+      run: |
+        buildozer clean || true
 
     - name: Compilar APK con Buildozer
       run: |
