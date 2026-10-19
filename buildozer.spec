@@ -1,4 +1,6 @@
 [app]
+source.dir = .
+version = 0.1
 title = Contribuyente Guadalupe
 package.name = contribuyenteguadalupe
 package.domain = org.municipalidad
