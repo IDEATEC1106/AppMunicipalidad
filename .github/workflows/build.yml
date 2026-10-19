@@ -41,7 +41,12 @@ jobs:
     - name: Limpiar compilaciones anteriores
       run: |
         buildozer clean || true
-
+    - name: Fix Autotools Macro Paths for Buildozer
+      run: |
+        echo "ACLOCAL_PATH=/usr/share/aclocal" >> $GITHUB_ENV
+        # Ensures libtool macro files are visible to aclocal
+        sudo ln -sf /usr/share/aclocal/libtool.m4 /usr/share/aclocal/ltoptions.m4 /usr/share/aclocal/ltsugar.m4 /usr/share/aclocal/ltversion.m4 /usr/share/aclocal/lt~obsolete.m4 2>/dev/null || true
+    
     - name: Compilar APK con Buildozer
       run: |
         buildozer -v android debug
