@@ -16,7 +16,7 @@ from kivymd.uix.list import MDListItem, MDListItemHeadlineText, MDListItemSuppor
 from kivymd.uix.boxlayout import MDBoxLayout
 
 # URL de tu API Backend intermedia (Servidor Flask/FastAPI que se comunica con tu SQL Server)
-API_URL = "https://38.224.68.171,1433" # Cambiar por tu endpoint real en producción
+API_URL = "https://38.224.68.171:5001" # Cambiar por tu endpoint real en producción
 
 KV = """
 ScreenManager:
