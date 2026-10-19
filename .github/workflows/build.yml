@@ -8,8 +8,8 @@ on:
 
 jobs:
   build:
-    runs-on: runs-on: ubuntu-22.04  # Cambiar de ubuntu-latest (o ubuntu-24.04) a ubuntu-22.04
-
+    runs-on: ubuntu-22.04 
+    
     steps:
     - name: Clonar Repositorio
       uses: actions/checkout@v4
