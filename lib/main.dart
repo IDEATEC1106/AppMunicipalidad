@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 
 // URL de tu API backend intermedia
-const String apiUrl = "https://38.224.68.171:5001";
+const String apiUrl = "http://38.224.68.171:5001";
 
 void main() {
   // Ignorar certificados autofirmados si usas IP directa con HTTPS
