@@ -1,0 +1,5 @@
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0            # Para realizar las peticiones POST y GET a tu API
+  shared_preferences: ^2.2.2 # Para recordar la sesión del contribuyente si lo deseas
