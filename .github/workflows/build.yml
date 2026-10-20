@@ -27,15 +27,17 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generar estructura nativa de Flutter si no existe
+      - name: Forzar creación de estructura nativa completa de Flutter
         run: |
-          if [ ! -d "android" ]; then
-            flutter create . --org com.municipalidad.guadalupe --project-name app_municipalidad
-          fi
+          # Eliminar cualquier rastro antiguo para evitar conflictos
+          rm -rf android ios linux macos windows web .dart_tool
+          
+          # Crear un proyecto nuevo limpio con soporte completo para Android
+          flutter create . --org com.municipalidad.guadalupe --project-name app_municipalidad
 
       - name: Configurar permisos de red y tráfico Cleartext en Android
         run: |
-          # Crear el directorio res/xml si no existe
+          # Asegurar que el directorio res/xml existe
           mkdir -p android/app/src/main/res/xml
 
           # Crear el archivo network_security_config.xml para permitir conexiones IP directas
@@ -51,7 +53,18 @@ jobs:
           </network-security-config>
           EOF
 
-          echo "Archivo network_security_config.xml creado correctamente."
+          # Modificar el AndroidManifest.xml para inyectar el permiso de Internet y la config de red
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          
+          # Insertar uses-permission de internet si no existe
+          if ! grep -q "android.permission.INTERNET" "$MANIFEST_PATH"; then
+            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST_PATH"
+          fi
+
+          # Agregar networkSecurityConfig y usesCleartextTraffic a la etiqueta application
+          sed -i 's/<application/<application android:networkSecurityConfig="@xml\/network_security_config" android:usesCleartextTraffic="true"/' "$MANIFEST_PATH"
+
+          echo "Configuración de red de Android inyectada correctamente."
 
       - name: Obtener dependencias de Flutter
         run: flutter pub get
