@@ -428,7 +428,7 @@ class LoginScreen(Screen):
 
     def _hacer_login_api(self, usuario, clave):
         try:
-            response = requests.post(f"{API_URL}/api/login", json={"id_contri": usuario, "ruc_le": clave}, timeout=10)
+            response = requests.post(f"{API_URL}/api/login", json={"id_contri": usuario, "ruc_le": clave}, timeout=10, verify=False)
             if response.status_code == 200:
                 data = response.json()
                 if data.get("success"):
@@ -473,7 +473,7 @@ class DatosScreen(Screen):
 
     def _obtener_datos_api(self, usr_id):
         try:
-            response = requests.get(f"{API_URL}/api/contribuyente/{usr_id}", timeout=10)
+            response = requests.get(f"{API_URL}/api/contribuyente/{usr_id}", timeout=10, verify=False)
             if response.status_code == 200:
                 datos = response.json().get("data", {})
                 Clock.schedule_once(lambda dt: self._renderizar_datos(datos))
@@ -537,7 +537,7 @@ class PredialScreen(Screen):
 
     def _obtener_cuentas_api(self, usr_id):
         try:
-            response = requests.get(f"{API_URL}/api/predial/cuentas/{usr_id}", timeout=10)
+            response = requests.get(f"{API_URL}/api/predial/cuentas/{usr_id}", timeout=10, verify=False)
             if response.status_code == 200:
                 resultado = response.json()
                 Clock.schedule_once(lambda dt: self._renderizar_cuentas(resultado))
@@ -572,4 +572,9 @@ class SistemaApp(MDApp):
         return Builder.load_string(KV)
 
 if __name__ == '__main__':
-    SistemaApp().run()
+    try:
+        SistemaApp().run()
+    except Exception as e:
+        import traceback
+        print("ERROR CRITICO EN APP:")
+        traceback.print_exc()
