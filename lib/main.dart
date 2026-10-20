@@ -334,7 +334,7 @@ class _PredialScreenState extends State<PredialScreen> {
     }
   }
 
-  void _mostrarPrediosAnio(String usuarioId, String anioFiscal) async {
+  void _mostrarPrediosAnio(String anioFiscal, String usuarioId) async {
     // Mostrar indicador de carga emergente
     showDialog(
       context: context,
