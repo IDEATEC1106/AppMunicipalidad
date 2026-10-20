@@ -421,10 +421,11 @@ class _PredialScreenState extends State<PredialScreen> {
         final anioFiscal = item['Año_Fiscal'] ?? item['ANO'] ?? item['ANIO_FISCAL'] ?? item['PERIODO'] ?? 'N/A';
         final baseImponible = item['BaseImponible'] ?? item['BASEIMP'] ?? '0.00';
         final impuesto = item['Impuesto'] ?? item['IMPVAL'] ?? '0.00';
+        final automatizacion = item['Automatizacion'] ?? item['AUTOS'] ?? '0.00';
         final reajustes = item['Reajuste'] ?? item['REAJUSTES'] ?? '0.00';
         final intereses = item['Intereses'] ?? item['INTERESES'] ?? '0.00';
-        final fechaPago = item['Fecha_Pago'] ?? item['FECHA'] ?? item['F_PAGO'] ?? 'N/A';
-        final vcajaNro = item['VCaja_Nro'] ?? item['CAJA'] ?? item['NRO_CAJA'] ?? 'N/A';
+        final fechaPago = item['Fecha_pago'] ?? item['FECHA'] ?? item['F_PAGO'] ?? 'N/A';
+        final vcajaNro = item['Caja_Nro'] ?? item['CAJA'] ?? item['NRO_CAJA'] ?? 'N/A';
         final totalCancelado = item['Total_Cancelado'] ?? item['TOTAL'] ?? item['MONTO'] ?? '0.00';
 
         return Card(
