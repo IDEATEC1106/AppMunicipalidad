@@ -348,13 +348,13 @@ class _PredialScreenState extends State<PredialScreen> {
         final item = listaPendientes[index];
         
         // Extrayendo los campos ordenados (ajustable según los nombres exactos de columnas que devuelva tu procedimiento almacenado)
-        final anioFiscal = item['ANIO'] ?? item['ANO'] ?? item['ANIO_FISCAL'] ?? item['PERIODO'] ?? 'N/A';
-        final baseImponible = item['BASE_IMPONIBLE'] ?? item['BASEIMP'] ?? '0.00';
-        final impuesto = item['IMPUESTO'] ?? item['IMPVAL'] ?? '0.00';
-        final automatizacion = item['AUTOMATIZACION'] ?? item['AUTOS'] ?? '0.00';
-        final reajustes = item['REAJUSTE'] ?? item['REAJUSTES'] ?? '0.00';
-        final intereses = item['INTERES'] ?? item['INTERESES'] ?? '0.00';
-        final totalPendiente = item['TOTAL'] ?? item['TOTAL_PAGO'] ?? item['SALDO'] ?? '0.00';
+        final anioFiscal = item['Año_Fiscal'] ?? item['ANO'] ?? item['ANIO_FISCAL'] ?? item['PERIODO'] ?? 'N/A';
+        final baseImponible = item['BaseImponible'] ?? item['BASEIMP'] ?? '0.00';
+        final impuesto = item['Impuesto'] ?? item['IMPVAL'] ?? '0.00';
+        final automatizacion = item['Automatizacion'] ?? item['AUTOS'] ?? '0.00';
+        final reajustes = item['Reajuste'] ?? item['REAJUSTES'] ?? '0.00';
+        final intereses = item['Intereses'] ?? item['INTERESES'] ?? '0.00';
+        final totalPendiente = item['Total_Pendiente'] ?? item['TOTAL_PAGO'] ?? item['SALDO'] ?? '0.00';
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
