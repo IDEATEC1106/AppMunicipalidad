@@ -293,16 +293,75 @@ class _DatosScreenState extends State<DatosScreen> {
 // ==========================================
 // 4. PANTALLA DE CONTROL PREDIAL
 // ==========================================
-class PredialScreen extends StatelessWidget {
+class PredialScreen extends StatefulWidget {
   const PredialScreen({super.key});
+
+  @override
+  State<PredialScreen> createState() => _PredialScreenState();
+}
+
+class _PredialScreenState extends State<PredialScreen> {
+  List<dynamic> listaPredios = [];
+  bool isLoading = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final String usuarioId = ModalRoute.of(context)!.settings.arguments as String? ?? "";
+    _cargarPredios(usuarioId);
+  }
+
+  Future<void> _cargarPredios(String usuarioId) async {
+    try {
+      final response = await http.get(Uri.parse('$apiUrl/api/predios/$usuarioId'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          listaPredios = data["data"] ?? [];
+          isLoading = false;
+        });
+      } else {
+        setState(() => isLoading = false);
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Control Impuesto Predial")),
-      body: const Center(
-        child: Text("Módulo de Predios configurado de forma estable en Flutter."),
-      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : listaPredios.isEmpty
+              ? const Center(child: Text("No se encontraron predios registrados."))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: listaPredios.length,
+                  itemBuilder: (context, index) {
+                    final predio = listaPredios[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Predio #${predio['COD_PREDIO'] ?? 'N/A'}",
+                              style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(height: 6),
+                            Text("Dirección: ${predio['DIRECCION'] ?? 'No especificada'}", style: const TextStyle(fontSize: 14)),
+                            const SizedBox(height: 4),
+                            Text("Autoavalúo: S/. ${predio['AUTOAVALUO'] ?? '0.00'}", style: const TextStyle(fontSize: 14)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
