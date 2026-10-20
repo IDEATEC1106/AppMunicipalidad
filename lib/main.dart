@@ -456,6 +456,8 @@ class _PredialScreenState extends State<PredialScreen> {
                 const SizedBox(height: 4),
                 Text("Impuesto: S/. $impuesto", style: const TextStyle(fontSize: 14)),
                 const SizedBox(height: 4),
+                Text("Automatización: S/. $automatizacion", style: const TextStyle(fontSize: 14)),
+                const SizedBox(height: 4),
                 Text("Reajustes: S/. $reajustes", style: const TextStyle(fontSize: 14)),
                 const SizedBox(height: 4),
                 Text("Intereses: S/. $intereses", style: const TextStyle(fontSize: 14)),
