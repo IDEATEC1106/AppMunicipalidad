@@ -29,14 +29,17 @@ jobs:
 
       - name: Generar estructura nativa de Flutter (Gradle / Android)
         run: |
-          # Guardar nuestros archivos principales
+          # Guardar nuestros archivos principales de código y activos
           mkdir -p temp_backup
           cp lib/main.dart temp_backup/
           cp pubspec.yaml temp_backup/
           if [ -f "escudo3_MDG.png" ]; then cp escudo3_MDG.png temp_backup/; fi
           
-          # Crear proyecto limpio de Flutter encima del repositorio
-          flutter create . --org com.municipalidad.guadalupe --project-name app_municipalidad --force
+          # Limpiar archivos de configuración antiguos de Python/Buildozer
+          rm -rf android ios linux macos windows web pubspec.lock .dart_tool
+          
+          # Crear la estructura nativa de Flutter limpia
+          flutter create . --org com.municipalidad.guadalupe --project-name app_municipalidad
           
           # Restaurar nuestros archivos personalizados
           cp temp_backup/main.dart lib/
