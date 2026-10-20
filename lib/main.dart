@@ -507,7 +507,7 @@ class _PredialScreenState extends State<PredialScreen> {
                       },
                     ),
                   ],
-                )
+                ),
                 const Divider(color: Colors.white24, height: 20),
                 Text("Base Imponible: S/. $baseImponible", style: const TextStyle(fontSize: 14)),
                 const SizedBox(height: 4),
@@ -588,7 +588,7 @@ class _PredialScreenState extends State<PredialScreen> {
                       },
                     ),
                   ],
-                )
+                ),
                 const Divider(color: Colors.white24, height: 20),
                 Text("Base Imponible: S/. $baseImponible", style: const TextStyle(fontSize: 14)),
                 const SizedBox(height: 4),
