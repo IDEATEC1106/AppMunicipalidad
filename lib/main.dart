@@ -334,6 +334,128 @@ class _PredialScreenState extends State<PredialScreen> {
     }
   }
 
+  void _mostrarPrediosAnio(String usuarioId, String anioFiscal) async {
+    // Mostrar indicador de carga emergente
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.amber)),
+    );
+
+    try {
+      final response = await http.get(Uri.parse('$apiUrl/api/predios/$usuarioId/$anioFiscal'));
+      
+      // Cerrar el indicador de carga
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> predios = data["data"] ?? [];
+
+        // Mostrar el BottomSheet con los predios obtenidos
+        if (!mounted) return;
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: const Color(0xFF1E3A1E),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (context) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.6,
+              minChildSize: 0.4,
+              maxChildSize: 0.9,
+              expand: false,
+              builder: (context, scrollController) {
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(color: Colors.white54, borderRadius: BorderRadius.circular(2)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "Predios del Año: $anioFiscal",
+                        style: const TextStyle(color: Colors.amber, fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const Divider(color: Colors.white24),
+                      Expanded(
+                        child: predios.isEmpty
+                            ? const Center(child: Text("No se encontraron predios para este período.", style: TextStyle(color: Colors.white70)))
+                            : ListView.builder(
+                                controller: scrollController,
+                                itemCount: predios.length,
+                                itemBuilder: (context, index) {
+                                  final p = predios[index];
+                                  return Card(
+                                    color: Colors.black26,
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            p['Nombre_Predio'] ?? p['DIRECCION'] ?? 'Inmueble',
+                                            style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 15),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text("Tipo: ${p['Tipo_Predio'] ?? 'N/A'}", style: const TextStyle(fontSize: 13)),
+                                          Text("Dirección: ${p['Direccion'] ?? 'N/A'}", style: const TextStyle(fontSize: 13)),
+                                          Text("Sector: ${p['Sector'] ?? 'N/A'}", style: const TextStyle(fontSize: 13)),
+                                          Text("Área Terreno: ${p['Area_Tereno'] ?? '0'} m²", style: const TextStyle(fontSize: 13)),
+                                          Text("Área Construida: ${p['Area_Construida'] ?? '0'} m²", style: const TextStyle(fontSize: 13)),
+                                          Text("Condición: ${p['Condicion'] ?? 'N/A'}", style: const TextStyle(fontSize: 13)),
+                                          const Divider(color: Colors.white12),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              const Text("Autoavalúo Total:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                              Text("S/. ${p['Total_Autoavaluo'] ?? '0.00'}", style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      } else {
+        _mostrarAlertaError("Error", "No se pudo cargar la lista de predios.");
+      }
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      _mostrarAlertaError("Error de Conexión", e.toString());
+    }
+  }
+
+  void _mostrarAlertaError(String titulo, String mensaje) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(titulo),
+        content: Text(mensaje),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("Aceptar"))],
+      ),
+    );
+  }
+  
   // Vista especializada y ordenada para los Pendientes
   Widget _buildListaPendientes() {
     if (isLoading) return const Center(child: CircularProgressIndicator());
@@ -366,18 +488,26 @@ class _PredialScreenState extends State<PredialScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Año / Período: $anioFiscal",
-                      style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16),
+                      "Período: $anioFiscal",
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                     ),
-                    const Chip(
-                      backgroundColor: Color(0x33FF5252),
-                      label: Text(
-                        "Pendiente",
-                        style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: const Color(0xFF0D3B0D),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
+                      icon: const Icon(Icons.home_work_rounded, size: 16),
+                      label: const Text("Predios", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        final String usuarioId = ModalRoute.of(context)!.settings.arguments as String? ?? "";
+                        _mostrarPrediosAnio(usuarioId, anioFiscal.toString());
+                      },
                     ),
                   ],
-                ),
+                )
                 const Divider(color: Colors.white24, height: 20),
                 Text("Base Imponible: S/. $baseImponible", style: const TextStyle(fontSize: 14)),
                 const SizedBox(height: 4),
@@ -439,18 +569,26 @@ class _PredialScreenState extends State<PredialScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Año / Período: $anioFiscal",
-                      style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16),
+                      "Período: $anioFiscal",
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                     ),
-                    const Chip(
-                      backgroundColor: Color(0x3369F0AE),
-                      label: Text(
-                        "Pagado",
-                        style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: const Color(0xFF0D3B0D),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
+                      icon: const Icon(Icons.home_work_rounded, size: 16),
+                      label: const Text("Predios", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        final String usuarioId = ModalRoute.of(context)!.settings.arguments as String? ?? "";
+                        _mostrarPrediosAnio(usuarioId, anioFiscal.toString());
+                      },
                     ),
                   ],
-                ),
+                )
                 const Divider(color: Colors.white24, height: 20),
                 Text("Base Imponible: S/. $baseImponible", style: const TextStyle(fontSize: 14)),
                 const SizedBox(height: 4),
