@@ -1,3 +1,5 @@
+import traceback
+import os
 import threading
 import requests
 from kivy.app import App
@@ -577,6 +579,8 @@ if __name__ == '__main__':
     try:
         SistemaApp().run()
     except Exception as e:
-        import traceback
-        print("ERROR CRITICO EN APP:")
-        traceback.print_exc()
+        # Esto guarda el error exacto en la carpeta de documentos o raíz del teléfono
+        error_path = os.path.join(os.path.expanduser('~'), 'error_log.txt')
+        with open(error_path, 'w') as f:
+            traceback.print_exc(file=f)
+        raise e
