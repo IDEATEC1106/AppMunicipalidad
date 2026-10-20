@@ -95,15 +95,17 @@ class _LoginScreenState extends State<LoginScreen> {
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
+        if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data["success"] == true) {
           if (!mounted) return;
           Navigator.pushReplacementNamed(context, '/menu', arguments: usuario);
         } else {
-          _mostrarAlerta("Acceso Denegado", "Datos incorrectos.");
+          _mostrarAlerta("Acceso Denegado", data["message"] ?? "Datos incorrectos.");
         }
       } else {
-        _mostrarAlerta("Error", "Servidor no disponible temporalmente.");
+        // CAMBIO TEMPORAL: Mostrar el código y el cuerpo exacto que devuelve Flask
+        _mostrarAlerta("Respuesta del Servidor", "Código: ${response.statusCode}\nCuerpo: ${response.body}");
       }
     } catch (e) {
       _mostrarAlerta("Error de Red", "No se pudo conectar al servidor: $e");
