@@ -343,7 +343,7 @@ class _PredialScreenState extends State<PredialScreen> {
     );
 
     try {
-      final response = await http.get(Uri.parse('$apiUrl/api/predios/$usuarioId/$anioFiscal'));
+      final response = await http.get(Uri.parse('$apiUrl/api/predios/$anioFiscal/$usuarioId'));
       
       // Cerrar el indicador de carga
       if (!mounted) return;
@@ -394,40 +394,54 @@ class _PredialScreenState extends State<PredialScreen> {
                                 controller: scrollController,
                                 itemCount: predios.length,
                                 itemBuilder: (context, index) {
-                                  final p = predios[index];
-                                  return Card(
-                                    color: Colors.black26,
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(12.0),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            p['Nombre_Predio'] ?? p['DIRECCION'] ?? 'Inmueble',
-                                            style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 15),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text("Tipo: ${p['Tipo_Predio'] ?? 'N/A'}", style: const TextStyle(fontSize: 13)),
-                                          Text("Dirección: ${p['Direccion'] ?? 'N/A'}", style: const TextStyle(fontSize: 13)),
-                                          Text("Sector: ${p['Sector'] ?? 'N/A'}", style: const TextStyle(fontSize: 13)),
-                                          Text("Área Terreno: ${p['Area_Tereno'] ?? '0'} m²", style: const TextStyle(fontSize: 13)),
-                                          Text("Área Construida: ${p['Area_Construida'] ?? '0'} m²", style: const TextStyle(fontSize: 13)),
-                                          Text("Condición: ${p['Condicion'] ?? 'N/A'}", style: const TextStyle(fontSize: 13)),
-                                          const Divider(color: Colors.white12),
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                final p = predios[index];
+                                return Card(
+                                  color: Colors.black26,
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          p['Nombre_Predio'] ?? p['DIRECCION'] ?? 'Inmueble',
+                                          style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 15),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        // Etiquetas en amarillo bajito (Colors.amber[200]) y datos en blanco
+                                        RichText(
+                                          text: TextSpan(
+                                            style: const TextStyle(fontSize: 13),
                                             children: [
-                                              const Text("Autoavalúo Total:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                              Text("S/. ${p['Total_Autoavaluo'] ?? '0.00'}", style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                                              TextSpan(text: "Tipo: ", style: TextStyle(color: Colors.amber[200], fontWeight: FontWeight.bold)),
+                                              TextSpan(text: "${p['Tipo_Predio'] ?? 'N/A'}\n", style: const TextStyle(color: Colors.white)),
+                                              TextSpan(text: "Dirección: ", style: TextStyle(color: Colors.amber[200], fontWeight: FontWeight.bold)),
+                                              TextSpan(text: "${p['Direccion'] ?? 'N/A'}\n", style: const TextStyle(color: Colors.white)),
+                                              TextSpan(text: "Sector: ", style: TextStyle(color: Colors.amber[200], fontWeight: FontWeight.bold)),
+                                              TextSpan(text: "${p['Sector'] ?? 'N/A'}\n", style: const TextStyle(color: Colors.white)),
+                                              TextSpan(text: "Área Terreno: ", style: TextStyle(color: Colors.amber[200], fontWeight: FontWeight.bold)),
+                                              TextSpan(text: "${p['Area_Tereno'] ?? '0'} m²\n", style: const TextStyle(color: Colors.white)),
+                                              TextSpan(text: "Área Construida: ", style: TextStyle(color: Colors.amber[200], fontWeight: FontWeight.bold)),
+                                              TextSpan(text: "${p['Area_Construida'] ?? '0'} m²\n", style: const TextStyle(color: Colors.white)),
+                                              TextSpan(text: "Condición: ", style: TextStyle(color: Colors.amber[200], fontWeight: FontWeight.bold)),
+                                              TextSpan(text: "${p['Condicion'] ?? 'N/A'}", style: const TextStyle(color: Colors.white)),
                                             ],
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                        const Divider(color: Colors.white12),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text("Autoavalúo Total:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                            Text("S/. ${p['Total_Autoavaluo'] ?? '0.00'}", style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                      ],
                                     ),
-                                  );
-                                },
-                              ),
+                                  ),
+                                );
+                              },
+                           ),
                       ),
                     ],
                   ),
