@@ -27,24 +27,31 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generar estructura nativa de Flutter (Gradle / Android)
+      - name: Generar estructura nativa de Flutter si no existe
         run: |
-          # Guardar nuestros archivos principales de código y activos
-          mkdir -p temp_backup
-          cp lib/main.dart temp_backup/
-          cp pubspec.yaml temp_backup/
-          if [ -f "escudo3_MDG.png" ]; then cp escudo3_MDG.png temp_backup/; fi
-          
-          # Limpiar archivos de configuración antiguos de Python/Buildozer
-          rm -rf android ios linux macos windows web pubspec.lock .dart_tool
-          
-          # Crear la estructura nativa de Flutter limpia
-          flutter create . --org com.municipalidad.guadalupe --project-name app_municipalidad
-          
-          # Restaurar nuestros archivos personalizados
-          cp temp_backup/main.dart lib/
-          cp temp_backup/pubspec.yaml ./
-          if [ -f "temp_backup/escudo3_MDG.png" ]; then cp temp_backup/escudo3_MDG.png ./; fi
+          if [ ! -d "android" ]; then
+            flutter create . --org com.municipalidad.guadalupe --project-name app_municipalidad
+          fi
+
+      - name: Configurar permisos de red y tráfico Cleartext en Android
+        run: |
+          # Crear el directorio res/xml si no existe
+          mkdir -p android/app/src/main/res/xml
+
+          # Crear el archivo network_security_config.xml para permitir conexiones IP directas
+          cat << 'EOF' > android/app/src/main/res/xml/network_security_config.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <network-security-config>
+              <base-config cleartextTrafficPermitted="true">
+                  <trust-anchors>
+                      <certificates src="system" />
+                      <certificates src="user" />
+                  </trust-anchors>
+              </base-config>
+          </network-security-config>
+          EOF
+
+          echo "Archivo network_security_config.xml creado correctamente."
 
       - name: Obtener dependencias de Flutter
         run: flutter pub get
