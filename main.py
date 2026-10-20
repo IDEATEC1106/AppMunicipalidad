@@ -256,89 +256,43 @@ ScreenManager:
     on_enter: root.cargar_cuentas()
     canvas.before:
         Color:
-            rgba: 0.05, 0.25, 0.05, 1 
+            rgba: 0.05, 0.25, 0.05, 1
         Rectangle:
             pos: self.pos
             size: self.size
-
     MDBoxLayout:
         orientation: 'vertical'
         padding: "15dp"
         spacing: "10dp"
-
         MDLabel:
             text: "CONTROL PAGOS IMPUESTO PREDIAL"
             halign: "center"
             font_style: "Title"
             role: "medium"
             theme_text_color: "Custom"
-            text_color: 1, 0.8, 0, 1 
+            text_color: 1, 0.8, 0, 1
             bold: True
             size_hint_y: None
             height: "40dp"
+        
+        ScrollView:
+            MDGridLayout:
+                id: grid_pendientes
+                cols: 1
+                spacing: "10dp"
+                padding: "10dp"
+                size_hint_y: None
+                height: self.minimum_height
 
-        MDTabsPrimary:
-            id: tabs_predial
-            pos_hint: {"center_x": .5}
-            size_hint_y: None
-            height: "48dp"
-            on_tab_switch: root.cambiar_pestania(*args)
-
-            MDTabsItem:
-                MDTabsItemText:
-                    text: "CUENTAS PENDIENTES"
-
-            MDTabsItem:
-                MDTabsItemText:
-                    text: "CUENTAS PAGADAS"
-
-        MDTabsCarousel:
-            id: related_content
-            size_hint_y: 1
-
-            ScrollView:
-                MDGridLayout:
-                    id: grid_pendientes
-                    cols: 1
-                    spacing: "10dp"
-                    padding: "10dp"
-                    size_hint_y: None
-                    height: self.minimum_height
-
-            ScrollView:
-                MDGridLayout:
-                    id: grid_pagadas
-                    cols: 1
-                    spacing: "10dp"
-                    padding: "10dp"
-                    size_hint_y: None
-                    height: self.minimum_height
-
-        MDBoxLayout:
-            orientation: 'horizontal'
-            spacing: "15dp"
-            size_hint_y: None
-            height: "50dp"
-
-            MDButton:
-                style: "filled"
-                md_bg_color: 1, 1, 1, 1
-                size_hint_x: 0.5
-                on_release: root.manager.current = 'lista_predios_screen'
-                MDButtonText:
-                    text: "PREDIOS REGISTRADOS"
-                    text_color: 0.05, 0.25, 0.05, 1
-                    bold: True
-
-            MDButton:
-                style: "filled"
-                md_bg_color: 1, 0.8, 0, 1 
-                size_hint_x: 0.5
-                on_release: root.manager.current = 'menu'
-                MDButtonText:
-                    text: "VOLVER AL MENÚ"
-                    text_color: 0.05, 0.25, 0.05, 1
-                    bold: True
+        MDButton:
+            style: "filled"
+            md_bg_color: 1, 0.8, 0, 1
+            size_hint_x: 1
+            on_release: root.manager.current = 'menu'
+            MDButtonText:
+                text: "VOLVER AL MENÚ"
+                text_color: 0.05, 0.25, 0.05, 1
+                bold: True
                     
 <ListaPrediosScreen>:
     name: 'lista_predios_screen'
