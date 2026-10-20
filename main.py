@@ -199,6 +199,8 @@ ScreenManager:
                 pos_hint: {"center_x": .5, "center_y": .5}
 
         Widget:
+            size_hint_y: None
+            height: "30dp"
 
 <DatosScreen>:
     name: 'datos_contribuyente'
