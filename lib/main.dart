@@ -57,6 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _userController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true; // 👈 Variable para controlar la visibilidad
 
   void _mostrarAlerta(String titulo, String mensaje) {
     showDialog(
@@ -149,12 +150,24 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 20),
               TextField(
                 controller: _passController,
-                obscureText: true,
+                obscureText: _obscurePassword, // 👈 Se conecta a la variable de estado
                 decoration: InputDecoration(
                   labelText: "Clave de Acceso (RUC/LE)",
                   filled: true,
                   fillColor: Colors.white12,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  // 👈 Agregamos el botón del "ojito" aquí:
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.white70,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword; // Alterna el estado
+                      });
+                    },
+                  ),
                 ),
               ),
               const SizedBox(height: 30),
