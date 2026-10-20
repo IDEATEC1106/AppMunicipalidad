@@ -1,4 +1,4 @@
-name: Compilar APK con Buildozer
+name: Compilar APK Flutter
 
 on:
   push:
@@ -8,51 +8,33 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04 
-    
+    runs-on: ubuntu-latest
+
     steps:
-    - name: Clonar Repositorio
-      uses: actions/checkout@v4
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
 
-    - name: Configurar Java (JDK 17)
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Configurar entorno de Java (OpenJDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
-    - name: Configurar Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      - name: Configurar Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.x' # Versión estable compatible con Material 3
+          channel: 'stable'
+          cache: true
 
-    - name: Instalar dependencias del sistema de Buildozer
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          git zip unzip build-essential libffi-dev libssl-dev \
-          python3-dev python3-pip python3-setuptools \
-          libtool autoconf automake gettext autopoint
+      - name: Obtener dependencias de Flutter
+        run: flutter pub get
 
-    - name: Instalar Buildozer y Cython
-      run: |
-        pip install --upgrade pip
-        pip install --upgrade cython==0.29.36 buildozer
+      - name: Compilar APK (Release)
+        run: flutter build apk --release
 
-    - name: Limpiar compilaciones anteriores
-      run: |
-        buildozer clean || true
-    - name: Fix Autotools Macro Paths for Buildozer
-      run: |
-        echo "ACLOCAL_PATH=/usr/share/aclocal" >> $GITHUB_ENV
-        # Ensures libtool macro files are visible to aclocal
-        sudo ln -sf /usr/share/aclocal/libtool.m4 /usr/share/aclocal/ltoptions.m4 /usr/share/aclocal/ltsugar.m4 /usr/share/aclocal/ltversion.m4 /usr/share/aclocal/lt~obsolete.m4 2>/dev/null || true
-    
-    - name: Compilar APK con Buildozer
-      run: |
-        buildozer -v android debug
-
-    - name: Subir APK generado
-      uses: actions/upload-artifact@v4
-      with:
-        name: paquete-apk
-        path: bin/*.apk
+      - name: Subir APK como Artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
