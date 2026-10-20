@@ -347,7 +347,6 @@ class _PredialScreenState extends State<PredialScreen> {
       itemBuilder: (context, index) {
         final item = listaPendientes[index];
         
-        // Extrayendo los campos ordenados (ajustable según los nombres exactos de columnas que devuelva tu procedimiento almacenado)
         final anioFiscal = item['Año_Fiscal'] ?? item['ANO'] ?? item['ANIO_FISCAL'] ?? item['PERIODO'] ?? 'N/A';
         final baseImponible = item['BaseImponible'] ?? item['BASEIMP'] ?? '0.00';
         final impuesto = item['Impuesto'] ?? item['IMPVAL'] ?? '0.00';
@@ -405,7 +404,7 @@ class _PredialScreenState extends State<PredialScreen> {
     );
   }
 
-  // Vista genérica limpia para los Pagados
+  // Vista especializada y ordenada para los Pagados
   Widget _buildListaPagados() {
     if (isLoading) return const Center(child: CircularProgressIndicator());
     if (listaPagados.isEmpty) {
@@ -417,30 +416,60 @@ class _PredialScreenState extends State<PredialScreen> {
       itemCount: listaPagados.length,
       itemBuilder: (context, index) {
         final item = listaPagados[index];
+        
+        // Extrayendo los campos de pagados con alternativas por si varía el nombre exacto de la columna SQL
+        final anioFiscal = item['Año_Fiscal'] ?? item['ANO'] ?? item['ANIO_FISCAL'] ?? item['PERIODO'] ?? 'N/A';
+        final baseImponible = item['BaseImponible'] ?? item['BASEIMP'] ?? '0.00';
+        final impuesto = item['Impuesto'] ?? item['IMPVAL'] ?? '0.00';
+        final reajustes = item['Reajuste'] ?? item['REAJUSTES'] ?? '0.00';
+        final intereses = item['Intereses'] ?? item['INTERESES'] ?? '0.00';
+        final fechaPago = item['Fecha_Pago'] ?? item['FECHA'] ?? item['F_PAGO'] ?? 'N/A';
+        final vcajaNro = item['VCaja_Nro'] ?? item['CAJA'] ?? item['NRO_CAJA'] ?? 'N/A';
+        final totalCancelado = item['Total_Cancelado'] ?? item['TOTAL'] ?? item['MONTO'] ?? '0.00';
+
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(14.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Registro de Pago", style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 16)),
-                    Chip(
+                    Text(
+                      "Año / Período: $anioFiscal",
+                      style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const Chip(
                       backgroundColor: Color(0x3369F0AE),
-                      label: Text("Pagado", style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                      label: Text(
+                        "Pagado",
+                        style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                ...item.entries.map((entry) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2.0),
-                    child: Text("${entry.key}: ${entry.value}", style: const TextStyle(fontSize: 14)),
-                  );
-                }).toList(),
+                const Divider(color: Colors.white24, height: 20),
+                Text("Base Imponible: S/. $baseImponible", style: const TextStyle(fontSize: 14)),
+                const SizedBox(height: 4),
+                Text("Impuesto: S/. $impuesto", style: const TextStyle(fontSize: 14)),
+                const SizedBox(height: 4),
+                Text("Reajustes: S/. $reajustes", style: const TextStyle(fontSize: 14)),
+                const SizedBox(height: 4),
+                Text("Intereses: S/. $intereses", style: const TextStyle(fontSize: 14)),
+                const SizedBox(height: 4),
+                Text("Fecha de Pago: $fechaPago", style: const TextStyle(fontSize: 14)),
+                const SizedBox(height: 4),
+                Text("VCaja Nro.: $vcajaNro", style: const TextStyle(fontSize: 14)),
+                const Divider(color: Colors.white24, height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Total Cancelado:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text("S/. $totalCancelado", style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
               ],
             ),
           ),
