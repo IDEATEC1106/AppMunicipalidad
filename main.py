@@ -530,11 +530,4 @@ class SistemaApp(MDApp):
         return Builder.load_string(KV)
 
 if __name__ == '__main__':
-    try:
-        SistemaApp().run()
-    except Exception as e:
-        # Esto guarda el error exacto en la carpeta de documentos o raíz del teléfono
-        error_path = os.path.join(os.path.expanduser('~'), 'error_log.txt')
-        with open(error_path, 'w') as f:
-            traceback.print_exc(file=f)
-        raise e
+    app.run(host='0.0.0.0', port=5001, debug=True)
