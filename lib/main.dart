@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 
-// URL de tu API backend intermediaria (Asegúrate de usar http:// para evitar el error de TLS)
+// URL de tu API backend intermediaria
 const String apiUrl = "http://38.224.68.171:5001";
 
 void main() {
@@ -314,7 +314,6 @@ class _PredialScreenState extends State<PredialScreen> {
 
   Future<void> _cargarDatosCuenta(String usuarioId) async {
     try {
-      // Hacemos peticiones paralelas para ambos estados de cuenta
       final resPen = await http.get(Uri.parse('$apiUrl/api/ctacte/pendientes/$usuarioId'));
       final resPag = await http.get(Uri.parse('$apiUrl/api/ctacte/pagados/$usuarioId'));
 
@@ -335,22 +334,32 @@ class _PredialScreenState extends State<PredialScreen> {
     }
   }
 
-  Widget _buildListaTributos(List<dynamic> items, String mensajeVacio, Color colorBadge) {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+  // Vista especializada y ordenada para los Pendientes
+  Widget _buildListaPendientes() {
+    if (isLoading) return const Center(child: CircularProgressIndicator());
+    if (listaPendientes.isEmpty) {
+      return const Center(child: Text("No hay tributos pendientes de pago.", style: TextStyle(color: Colors.white70)));
     }
-    if (items.isEmpty) {
-      return Center(child: Text(mensajeVacio, style: const TextStyle(color: Colors.white70)));
-    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: items.length,
+      itemCount: listaPendientes.length,
       itemBuilder: (context, index) {
-        final item = items[index];
+        final item = listaPendientes[index];
+        
+        // Extrayendo los campos ordenados (ajustable según los nombres exactos de columnas que devuelva tu procedimiento almacenado)
+        final anioFiscal = item['ANIO'] ?? item['ANO'] ?? item['ANIO_FISCAL'] ?? item['PERIODO'] ?? 'N/A';
+        final baseImponible = item['BASE_IMPONIBLE'] ?? item['BASEIMP'] ?? '0.00';
+        final impuesto = item['IMPUESTO'] ?? item['IMPVAL'] ?? '0.00';
+        final automatizacion = item['AUTOMATIZACION'] ?? item['AUTOS'] ?? '0.00';
+        final reajustes = item['REAJUSTE'] ?? item['REAJUSTES'] ?? '0.00';
+        final intereses = item['INTERES'] ?? item['INTERESES'] ?? '0.00';
+        final totalPendiente = item['TOTAL'] ?? item['TOTAL_PAGO'] ?? item['SALDO'] ?? '0.00';
+
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(14.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -358,21 +367,75 @@ class _PredialScreenState extends State<PredialScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Año / Período: ${item['ANIO'] ?? item['PERIODO'] ?? 'N/A'}",
+                      "Año / Período: $anioFiscal",
                       style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16),
                     ),
-                    Chip(
-                      backgroundColor: colorBadge.withOpacity(0.2),
+                    const Chip(
+                      backgroundColor: Color(0x33FF5252),
                       label: Text(
-                        colorBadge == Colors.redAccent ? "Pendiente" : "Pagado",
-                        style: TextStyle(color: colorBadge, fontWeight: FontWeight.bold, fontSize: 12),
+                        "Pendiente",
+                        style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12),
                       ),
+                    ),
+                  ],
+                ),
+                const Divider(color: Colors.white24, height: 20),
+                Text("Base Imponible: S/. $baseImponible", style: const TextStyle(fontSize: 14)),
+                const SizedBox(height: 4),
+                Text("Impuesto: S/. $impuesto", style: const TextStyle(fontSize: 14)),
+                const SizedBox(height: 4),
+                Text("Automatización: S/. $automatizacion", style: const TextStyle(fontSize: 14)),
+                const SizedBox(height: 4),
+                Text("Reajustes: S/. $reajustes", style: const TextStyle(fontSize: 14)),
+                const SizedBox(height: 4),
+                Text("Intereses: S/. $intereses", style: const TextStyle(fontSize: 14)),
+                const Divider(color: Colors.white24, height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Total Pendiente:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text("S/. $totalPendiente", style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Vista genérica limpia para los Pagados
+  Widget _buildListaPagados() {
+    if (isLoading) return const Center(child: CircularProgressIndicator());
+    if (listaPagados.isEmpty) {
+      return const Center(child: Text("No hay registros de pagos anteriores.", style: TextStyle(color: Colors.white70)));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: listaPagados.length,
+      itemBuilder: (context, index) {
+        final item = listaPagados[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Registro de Pago", style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+                    Chip(
+                      backgroundColor: Color(0x3369F0AE),
+                      label: Text("Pagado", style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 ...item.entries.map((entry) {
-                  if (entry.key == 'ANIO' || entry.key == 'PERIODO') return const SizedBox.shrink();
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2.0),
                     child: Text("${entry.key}: ${entry.value}", style: const TextStyle(fontSize: 14)),
@@ -406,8 +469,8 @@ class _PredialScreenState extends State<PredialScreen> {
         ),
         body: TabBarView(
           children: [
-            _buildListaTributos(listaPendientes, "No hay tributos pendientes de pago.", Colors.redAccent),
-            _buildListaTributos(listaPagados, "No hay registros de pagos anteriores.", Colors.greenAccent),
+            _buildListaPendientes(),
+            _buildListaPagados(),
           ],
         ),
       ),
