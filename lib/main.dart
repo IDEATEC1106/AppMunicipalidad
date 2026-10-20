@@ -291,7 +291,7 @@ class _DatosScreenState extends State<DatosScreen> {
 }
 
 // ==========================================
-// 4. PANTALLA DE CONTROL PREDIAL
+// 4. PANTALLA DE CONTROL PREDIAL Y TRIBUTOS (CON TABS)
 // ==========================================
 class PredialScreen extends StatefulWidget {
   const PredialScreen({super.key});
@@ -301,23 +301,30 @@ class PredialScreen extends StatefulWidget {
 }
 
 class _PredialScreenState extends State<PredialScreen> {
-  List<dynamic> listaPredios = [];
+  List<dynamic> listaPendientes = [];
+  List<dynamic> listaPagados = [];
   bool isLoading = true;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final String usuarioId = ModalRoute.of(context)!.settings.arguments as String? ?? "";
-    _cargarPredios(usuarioId);
+    _cargarDatosCuenta(usuarioId);
   }
 
-  Future<void> _cargarPredios(String usuarioId) async {
+  Future<void> _cargarDatosCuenta(String usuarioId) async {
     try {
-      final response = await http.get(Uri.parse('$apiUrl/api/predios/$usuarioId'));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      // Hacemos peticiones paralelas para ambos estados de cuenta
+      final resPen = await http.get(Uri.parse('$apiUrl/api/ctacte/pendientes/$usuarioId'));
+      final resPag = await http.get(Uri.parse('$apiUrl/api/ctacte/pagados/$usuarioId'));
+
+      if (resPen.statusCode == 200 && resPag.statusCode == 200) {
+        final dataPen = jsonDecode(resPen.body);
+        final dataPag = jsonDecode(resPag.body);
+
         setState(() {
-          listaPredios = data["data"] ?? [];
+          listaPendientes = dataPen["data"] ?? [];
+          listaPagados = dataPag["data"] ?? [];
           isLoading = false;
         });
       } else {
@@ -328,40 +335,82 @@ class _PredialScreenState extends State<PredialScreen> {
     }
   }
 
+  Widget _buildListaTributos(List<dynamic> items, String mensajeVacio, Color colorBadge) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (items.isEmpty) {
+      return Center(child: Text(mensajeVacio, style: const TextStyle(color: Colors.white70)));
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Año / Período: ${item['ANIO'] ?? item['PERIODO'] ?? 'N/A'}",
+                      style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Chip(
+                      backgroundColor: colorBadge.withOpacity(0.2),
+                      label: Text(
+                        colorBadge == Colors.redAccent ? "Pendiente" : "Pagado",
+                        style: TextStyle(color: colorBadge, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ...item.entries.map((entry) {
+                  if (entry.key == 'ANIO' || entry.key == 'PERIODO') return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Text("${entry.key}: ${entry.value}", style: const TextStyle(fontSize: 14)),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Control Impuesto Predial")),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : listaPredios.isEmpty
-              ? const Center(child: Text("No se encontraron predios registrados."))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: listaPredios.length,
-                  itemBuilder: (context, index) {
-                    final predio = listaPredios[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Predio #${predio['COD_PREDIO'] ?? 'N/A'}",
-                              style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            const SizedBox(height: 6),
-                            Text("Dirección: ${predio['DIRECCION'] ?? 'No especificada'}", style: const TextStyle(fontSize: 14)),
-                            const SizedBox(height: 4),
-                            Text("Autoavalúo: S/. ${predio['AUTOAVALUO'] ?? '0.00'}", style: const TextStyle(fontSize: 14)),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Control de Pagos y Tributos"),
+          backgroundColor: const Color(0xFF0D3B0D),
+          bottom: const TabBar(
+            indicatorColor: Color(0xFFFFD700),
+            labelColor: Color(0xFFFFD700),
+            unselectedLabelColor: Colors.white60,
+            tabs: [
+              Tab(icon: Icon(Icons.warning_amber_rounded), text: "Pendientes"),
+              Tab(icon: Icon(Icons.check_circle_outline), text: "Realizados"),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildListaTributos(listaPendientes, "No hay tributos pendientes de pago.", Colors.redAccent),
+            _buildListaTributos(listaPagados, "No hay registros de pagos anteriores.", Colors.greenAccent),
+          ],
+        ),
+      ),
     );
   }
 }
