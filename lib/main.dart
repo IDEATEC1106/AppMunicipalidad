@@ -50,7 +50,81 @@ class MunicipalidadApp extends StatelessWidget {
 // ==========================================
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D3B0D),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // ==========================================
+              // AQUÍ INSERTAMOS EL ESCUDO
+              // ==========================================
+              Image.asset(
+                'escudo3_MDG.png',
+                height: 100, // Puedes ajustar el tamaño si lo prefieres
+                width: 100,
+              ),
+              const SizedBox(height: 20),
+              // ==========================================
 
+              const Text(
+                "MUNICIPALIDAD DISTRITAL DE GUADALUPE",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "Acceso al Contribuyente",
+                style: TextStyle(fontSize: 16, color: Color(0xFFFFD700), fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 40),
+              TextField(
+                controller: _userController,
+                decoration: InputDecoration(
+                  labelText: "Código de Contribuyente",
+                  filled: true,
+                  fillColor: Colors.white12,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _passController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "Clave de Acceso (RUC/LE)",
+                  filled: true,
+                  fillColor: Colors.white12,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFD700),
+                    foregroundColor: const Color(0xFF0D3B0D),
+                  ),
+                  onPressed: _isLoading ? null : _login,
+                  child: _isLoading
+                      ? const CircularProgressIndicator()
+                      : const Text("CONECTAR E INGRESAR", style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
