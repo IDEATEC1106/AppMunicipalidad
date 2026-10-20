@@ -3,16 +3,14 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 
-// URL de tu API backend intermedia
+// URL de tu API backend intermediaria (Asegúrate de usar http:// para evitar el error de TLS)
 const String apiUrl = "http://38.224.68.171:5001";
 
 void main() {
-  // Ignorar certificados autofirmados si usas IP directa con HTTPS
   HttpOverrides.global = MyHttpOverrides();
   runApp(const MunicipalidadApp());
 }
 
-// Clase para permitir certificados autofirmados en desarrollo
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
@@ -31,7 +29,7 @@ class MunicipalidadApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorSchemeSeed: const Color(0xFF0D3B0D), // Verde institucional
+        colorSchemeSeed: const Color(0xFF0D3B0D),
         brightness: Brightness.dark,
       ),
       initialRoute: '/',
@@ -46,7 +44,7 @@ class MunicipalidadApp extends StatelessWidget {
 }
 
 // ==========================================
-// 1. PANTALLA DE LOGIN (Con Estado Correcto)
+// 1. PANTALLA DE LOGIN
 // ==========================================
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -95,7 +93,6 @@ class _LoginScreenState extends State<LoginScreen> {
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data["success"] == true) {
           if (!mounted) return;
@@ -104,7 +101,6 @@ class _LoginScreenState extends State<LoginScreen> {
           _mostrarAlerta("Acceso Denegado", data["message"] ?? "Datos incorrectos.");
         }
       } else {
-        // CAMBIO TEMPORAL: Mostrar el código y el cuerpo exacto que devuelve Flask
         _mostrarAlerta("Respuesta del Servidor", "Código: ${response.statusCode}\nCuerpo: ${response.body}");
       }
     } catch (e) {
@@ -124,7 +120,6 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Escudo de la Municipalidad
               Image.asset(
                 'escudo3_MDG.png',
                 height: 100,
@@ -250,10 +245,12 @@ class _DatosScreenState extends State<DatosScreen> {
   bool isLoading = true;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final String usuarioId = ModalRoute.of(context)!.settings.arguments as String? ?? "";
-    _cargarDatos(usuarioId);
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final String usuarioId = ModalRoute.of(context)!.settings.arguments as String? ?? "";
+      _cargarDatos(usuarioId);
+    });
   }
 
   Future<void> _cargarDatos(String usuarioId) async {
@@ -264,6 +261,8 @@ class _DatosScreenState extends State<DatosScreen> {
           datosContribuyente = jsonDecode(response.body)["data"] ?? {};
           isLoading = false;
         });
+      } else {
+        setState(() => isLoading = false);
       }
     } catch (e) {
       setState(() => isLoading = false);
