@@ -306,6 +306,14 @@ class _DatosScreenState extends State<DatosScreen> {
 // ==========================================
 // 4. PANTALLA DE CONTROL ARBITRIOS (CON TABS)
 // ==========================================
+class ArbitriosScreen extends StatefulWidget {
+  final String usuarioId;
+  const ArbitriosScreen({super.key, required this.usuarioId});
+
+  @override
+  State<ArbitriosScreen> createState() => _ArbitriosScreenState();
+}
+
 class _ArbitriosScreenState extends State<ArbitriosScreen> with SingleTickerProviderStateMixin {
   String? idContriA;
   List<dynamic> listaPredios = [];
@@ -458,7 +466,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> with SingleTickerProv
                   ),
                 ),
 
-                // Resumen de Deudas por Predio (Una sola línea / Tarjeta compacta)
+                // Resumen de Deudas por Predio
                 Container(
                   padding: const EdgeInsets.all(12.0),
                   color: Colors.black45,
@@ -472,12 +480,12 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> with SingleTickerProv
                   ),
                 ),
 
-                // Contenido de Tabs (Pendientes vs Pagados)
+                // Contenido de Tabs
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      // Pestaña 1: Meses Pendientes (sp_Arbitrios_GetDeudaMensualPend)
+                      // Pestaña 1: Meses Pendientes
                       mesesPendientes.isEmpty
                           ? const Center(child: Text("No registra deudas pendientes para este predio."))
                           : ListView.builder(
@@ -499,7 +507,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> with SingleTickerProv
                               },
                             ),
 
-                      // Pestaña 2: Recibos Cancelados (sp_Arbitrios_GetDeudaMensualPagados)
+                      // Pestaña 2: Recibos Cancelados
                       mesesPagados.isEmpty
                           ? const Center(child: Text("No registra recibos cancelados para este predio."))
                           : ListView.builder(
@@ -538,7 +546,6 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> with SingleTickerProv
     );
   }
 }
-
 // ==========================================
 // 5. PANTALLA DE CONTROL PREDIAL Y TRIBUTOS (CON TABS)
 // ==========================================
