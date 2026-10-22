@@ -307,7 +307,7 @@ class _DatosScreenState extends State<DatosScreen> {
 // 4. PANTALLA DE CONTROL ARBITRIOS
 // ==========================================
 class ArbitriosScreen extends StatefulWidget {
-  final String rucLe; // Este es el password/ruc_le ingresado en el login
+  final String rucLe;
 
   const ArbitriosScreen({Key? key, required this.rucLe}) : super(key: key);
 
@@ -321,21 +321,20 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
 
   String? idContriA;
   List<dynamic> listaPredios = [];
-  String? predioSeleccionadoId; // id_predio
+  String? predioSeleccionadoId;
 
   bool isLoadingDetalle = false;
-  Map<String, dynamic>? resumenDeuda;
+  Map<String, dynamic> resumenDeuda = {};
   List<dynamic> mesesPendientes = [];
   List<dynamic> mesesPagados = [];
 
   @override
   void initState() {
     super.initState();
-    _obtenerIdContriA();
+    _obtenerPredios();
   }
 
-  // PASO 1: Obtener la relación de predios
-  Future<void> _obtenerIdContriA() async {
+  Future<void> _obtenerPredios() async {
     setState(() {
       isLoading = true;
       errorMessage = "";
@@ -348,36 +347,231 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
-          final List<dynamic> predios = data['data'] ?? [];
-          
-          // 🛠️ AQUÍ ESTÁ LA CLAVE: Capturamos el id_codigoA real que devuelve tu API/SQL Server
-          // (Asegúrate de que la llave en el JSON de tu Flask se llame 'id_codigoA', 'id_contriA' o similar)
-          final contriAEncontrado = data['id_codigoA'] ?? data['id_contriA'] ?? widget.rucLe;
-
           setState(() {
-            listaPredios = predios;
-            idContriA = contriAEncontrado.toString(); // Guardamos el valor real del procedimiento
+            listaPredios = data['data'] ?? [];
+            idContriA = widget.rucLe;
             isLoading = false;
           });
         } else {
           setState(() {
-            errorMessage = data['message'] ?? "No se encontraron predios de arbitrios.";
+            errorMessage = data['message'] ?? "No se encontraron predios.";
             isLoading = false;
           });
         }
       } else {
         setState(() {
-          errorMessage = "Error en el servidor (Código ${response.statusCode}).";
+          errorMessage = "Error en el servidor (${response.statusCode}).";
           isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        errorMessage = "Error al conectar con el servidor: $e";
+        errorMessage = "Error de conexión: $e";
         isLoading = false;
       });
     }
   }
+
+  Future<void> _consultarDeudasPredio(String idPredio) async {
+    setState(() {
+      predioSeleccionadoId = idPredio;
+      isLoadingDetalle = true;
+    });
+
+    try {
+      final contri = idContriA ?? widget.rucLe;
+
+      final resResumen = await http.get(Uri.parse('$apiUrl/api/arbitrios/resumen/$contri/$idPredio'));
+      final resPendientes = await http.get(Uri.parse('$apiUrl/api/arbitrios/pendientes/$contri/$idPredio'));
+      final resPagados = await http.get(Uri.parse('$apiUrl/api/arbitrios/pagados/$contri/$idPredio'));
+
+      if (resResumen.statusCode == 200 && resPendientes.statusCode == 200 && resPagados.statusCode == 200) {
+        final dataResumen = jsonDecode(resResumen.body);
+        final dataPendientes = jsonDecode(resPendientes.body);
+        final dataPagados = jsonDecode(resPagados.body);
+
+        setState(() {
+          // Capturamos el objeto de resumen (puede venir dentro de 'data' o directo)
+          resumenDeuda = dataResumen["data"] ?? dataResumen;
+          mesesPendientes = dataPendientes["data"] ?? dataPendientes;
+          mesesPagados = dataPagados["data"] ?? dataPagados;
+          isLoadingDetalle = false;
+        });
+      } else {
+        setState(() {
+          isLoadingDetalle = false;
+        });
+      }
+    } catch (e) {
+      print("Error al consultar deudas: $e");
+      setState(() {
+        isLoadingDetalle = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Extraemos los campos desde - hasta y total considerando posibles variaciones de mayúsculas/minúsculas
+    final totalVal = resumenDeuda['total'] ?? resumenDeuda['TOTAL'] ?? resumenDeuda['total_deuda'] ?? '0.00';
+    final desdeVal = resumenDeuda['desde'] ?? resumenDeuda['DESDE'] ?? resumenDeuda['anio_desde'] ?? '-';
+    final hastaVal = resumenDeuda['hasta'] ?? resumenDeuda['HASTA'] ?? resumenDeuda['anio_hasta'] ?? '-';
+
+    return DefaultTabController(
+      length: 2, // 2 Pestañas: Pendientes y Pagados
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Estado de Pagos de Arbitrios"),
+          backgroundColor: const Color(0xFF0D3B0D),
+          bottom: predioSeleccionadoId != null
+              ? const TabBar(
+                  indicatorColor: Colors.amber,
+                  tabs: [
+                    Tab(text: "Pendientes", icon: Icon(Icons.warning_amber_rounded)),
+                    Tab(text: "Pagados", icon: Icon(Icons.check_circle_outline)),
+                  ],
+                )
+              : null,
+        ),
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : errorMessage.isNotEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(errorMessage, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red, fontSize: 16)),
+                    ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Seleccione un Predio:", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          hint: const Text("-- Seleccione un predio --"),
+                          value: predioSeleccionadoId,
+                          items: listaPredios.map((predio) {
+                            final idVal = (predio['id_predio'] ?? predio['ID_PREDIO'] ?? predio['codigo']).toString();
+                            final dirVal = predio['direccion'] ?? predio['DIRECCION'] ?? '';
+                            return DropdownMenuItem<String>(
+                              value: idVal,
+                              child: Text("$idVal - $dirVal"),
+                            );
+                          }).toList(),
+                          onChanged: (nuevoId) {
+                            if (nuevoId != null) {
+                              _consultarDeudasPredio(nuevoId);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Si no hay predio seleccionado
+                        if (predioSeleccionadoId == null)
+                          const Expanded(
+                            child: Center(
+                              child: Text(
+                                "Seleccione un predio en la parte superior para consultar su estado.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          )
+                        else if (isLoadingDetalle)
+                          const Expanded(
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else
+                          Expanded(
+                            child: Column(
+                              children: [
+                                // Tarjeta de Resumen con Desde - Hasta y Total
+                                Card(
+                                  elevation: 3,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text("Resumen de Deuda", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0D3B0D))),
+                                        const Divider(),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text("Período Desde: $desdeVal", style: const TextStyle(fontSize: 14)),
+                                            Text("Hasta: $hastaVal", style: const TextStyle(fontSize: 14)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          "Total Pendiente: S/ $totalVal",
+                                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+
+                                // Cuerpo con Pestañas para Pendientes y Pagados
+                                Expanded(
+                                  child: TabBarView(
+                                    children: [
+                                      // PESTAÑA 1: PENDIENTES
+                                      mesesPendientes.isEmpty
+                                          ? const Center(child: Text("No registra deudas pendientes."))
+                                          : ListView.builder(
+                                              itemCount: mesesPendientes.length,
+                                              itemBuilder: (context, index) {
+                                                final item = mesesPendientes[index];
+                                                final periodo = item['mes'] ?? item['PERIODO'] ?? item['ano'] ?? 'N/A';
+                                                final monto = item['monto'] ?? item['TOTAL'] ?? item['deuda'] ?? '0.00';
+                                                return Card(
+                                                  child: ListTile(
+                                                    leading: const Icon(Icons.calendar_today, color: Colors.orange),
+                                                    title: Text("Período / Mes: $periodo"),
+                                                    trailing: Text("S/ $monto", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+
+                                      // PESTAÑA 2: PAGADOS
+                                      mesesPagados.isEmpty
+                                          ? const Center(child: Text("No registra recibos pagados."))
+                                          : ListView.builder(
+                                              itemCount: mesesPagados.length,
+                                              itemBuilder: (context, index) {
+                                                final item = mesesPagados[index];
+                                                final recibo = item['recibo'] ?? item['CAJA'] ?? item['nro_recibo'] ?? 'N/A';
+                                                final montoPagado = item['monto'] ?? item['TOTAL'] ?? '0.00';
+                                                return Card(
+                                                  child: ListTile(
+                                                    leading: const Icon(Icons.check_circle, color: Colors.green),
+                                                    title: Text("Recibo / Ref: $recibo"),
+                                                    trailing: Text("S/ $montoPagado", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+      ),
+    );
+  }
+}
   
   // PASOS 3 Y 4: Al seleccionar el predio, consultar deudas, meses pendientes y pagados
   Future<void> _seleccionarPredioYConsultarDeudas(String idPredio) async {
