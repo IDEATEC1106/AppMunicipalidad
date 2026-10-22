@@ -4,9 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 
 // URL de tu API backend intermediaria
-//const String apiUrl = "http://38.224.68.171:5001";
-// Por la IP de tu red local donde corre Flask:
-const String apiUrl = "http://192.168.15.253:5001";
+const String apiUrl = "http://38.224.68.171:5001";
 
 void main() {
   HttpOverrides.global = MyHttpOverrides();
@@ -344,7 +342,10 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     });
 
     try {
+      // 1. Asegúrate de que use '$apiUrl' y el parámetro correcto ${widget.rucLe}
       final url = Uri.parse('$apiUrl/api/arbitrios/idcontri/${widget.rucLe}');
+      print("Consultando URL: $url"); // Esto saldrá en tu consola de depuración para verificar
+
       final response = await http.get(url, headers: {"Content-Type": "application/json"});
 
       if (response.statusCode == 200) {
@@ -368,8 +369,9 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
           });
         }
       } else {
+        // Si te sigue dando 404, imprime qué URL intentó buscar exactamente
         setState(() {
-          errorMessage = "Error en la respuesta del servidor (Código ${response.statusCode}).";
+          errorMessage = "Error en el servidor (Código ${response.statusCode}) para la ruta: ${url.path}";
           isLoading = false;
         });
       }
