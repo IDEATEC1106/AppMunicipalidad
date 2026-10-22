@@ -391,7 +391,6 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
         final dataPagados = jsonDecode(resPagados.body);
 
         setState(() {
-          // Capturamos el objeto de resumen (puede venir dentro de 'data' o directo)
           resumenDeuda = dataResumen["data"] ?? dataResumen;
           mesesPendientes = dataPendientes["data"] ?? dataPendientes;
           mesesPagados = dataPagados["data"] ?? dataPagados;
@@ -412,13 +411,12 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Extraemos los campos desde - hasta y total considerando posibles variaciones de mayúsculas/minúsculas
     final totalVal = resumenDeuda['total'] ?? resumenDeuda['TOTAL'] ?? resumenDeuda['total_deuda'] ?? '0.00';
     final desdeVal = resumenDeuda['desde'] ?? resumenDeuda['DESDE'] ?? resumenDeuda['anio_desde'] ?? '-';
     final hastaVal = resumenDeuda['hasta'] ?? resumenDeuda['HASTA'] ?? resumenDeuda['anio_hasta'] ?? '-';
 
     return DefaultTabController(
-      length: 2, // 2 Pestañas: Pendientes y Pagados
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text("Estado de Pagos de Arbitrios"),
@@ -468,8 +466,6 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                           },
                         ),
                         const SizedBox(height: 16),
-
-                        // Si no hay predio seleccionado
                         if (predioSeleccionadoId == null)
                           const Expanded(
                             child: Center(
@@ -488,7 +484,6 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                           Expanded(
                             child: Column(
                               children: [
-                                // Tarjeta de Resumen con Desde - Hasta y Total
                                 Card(
                                   elevation: 3,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -517,12 +512,9 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-
-                                // Cuerpo con Pestañas para Pendientes y Pagados
                                 Expanded(
                                   child: TabBarView(
                                     children: [
-                                      // PESTAÑA 1: PENDIENTES
                                       mesesPendientes.isEmpty
                                           ? const Center(child: Text("No registra deudas pendientes."))
                                           : ListView.builder(
@@ -540,8 +532,6 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                                 );
                                               },
                                             ),
-
-                                      // PESTAÑA 2: PAGADOS
                                       mesesPagados.isEmpty
                                           ? const Center(child: Text("No registra recibos pagados."))
                                           : ListView.builder(
