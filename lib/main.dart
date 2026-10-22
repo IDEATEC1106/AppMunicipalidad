@@ -308,11 +308,8 @@ class _DatosScreenState extends State<DatosScreen> {
 // 4. PANTALLA DE CONTROL ARBITRIOS (CON TABS)
 // ==========================================
 
-// Importa tu servicio de API o controlador donde consultes los predios y deudas
-// import '../services/api_service.dart';
-
 class ArbitriosScreen extends StatefulWidget {
-  final String rucLe; // Viene directamente del login
+  final String rucLe; // Este es el password/ruc_le ingresado en el login
 
   const ArbitriosScreen({Key? key, required this.rucLe}) : super(key: key);
 
@@ -328,7 +325,6 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
   List<dynamic> listaPredios = [];
   String? predioSeleccionadoId; // id_predio
 
-  // Datos detallados del predio seleccionado
   bool isLoadingDetalle = false;
   Map<String, dynamic>? resumenDeuda;
   List<dynamic> mesesPendientes = [];
@@ -337,44 +333,50 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
   @override
   void initState() {
     super.initState();
-    _inicializarFlujoArbitrios();
+    _obtenerIdContriAConRucLe();
   }
 
-  // PASO 1: Obtener el id_contriA usando sp_Arbitrios_GetIDContriA con el ruc_le
-  Future<void> _inicializarFlujoArbitrios() async {
+  // PASO 1: Usar ruc_le para ejecutar sp_Arbitrios_GetIDContriA y obtener id_contriA
+  Future<void> _obtenerIdContriAConRucLe() async {
     setState(() {
       isLoading = true;
       errorMessage = "";
     });
 
     try {
-      print("Obteniendo id_contriA para RUC/LE: ${widget.rucLe}");
+      print("Consultando id_contriA usando ruc_le (password): ${widget.rucLe}");
       
-      // EJEMPLO DE LLAMADA A TU API (sp_Arbitrios_GetIDContriA):
-      // final resultadoContri = await ApiService.getContribuyenteIdA(widget.rucLe);
-      // idContriA = resultadoContri['id_contriA'];
+      // Ejemplo de llamada a tu API para sp_Arbitrios_GetIDContriA:
+      // final response = await http.post(Uri.parse('$apiUrl/api/arbitrios/get_id_contri_a'),
+      //     headers: {"Content-Type": "application/json"},
+      //     body: jsonEncode({"ruc_le": widget.rucLe}));
+      // 
+      // if (response.statusCode == 200) {
+      //   final data = jsonDecode(response.body);
+      //   idContriA = data['id_contriA']?.toString();
+      // }
 
       if (idContriA != null && idContriA!.isNotEmpty) {
-        // PASO 2: Con el id_contriA obtenido, cargamos la relación de predios con sp_Arbitrios_GetPredioxID
-        await _cargarPredios(idContriA!);
+        // PASO 2: Con el id_contriA obtenido, cargamos los predios (sp_Arbitrios_GetPredioxID)
+        await _cargarRelacionPredios(idContriA!);
       } else {
         setState(() {
-          errorMessage = "No se pudo obtener el identificador del contribuyente (id_contriA).";
+          errorMessage = "No se encontró el identificador del contribuyente (id_contriA) para las credenciales proporcionadas.";
           isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        errorMessage = "Error al iniciar el flujo de arbitrios: $e";
+        errorMessage = "Error al conectar con el servidor: $e";
         isLoading = false;
       });
     }
   }
 
-  // PASO 2: Obtener la relación de predios con sp_Arbitrios_GetPredioxID
-  Future<void> _cargarPredios(String contriA) async {
+  // PASO 2: Obtener la relación de predios usando id_contriA
+  Future<void> _cargarRelacionPredios(String contriA) async {
     try {
-      // EJEMPLO DE LLAMADA A TU API (sp_Arbitrios_GetPredioxID para listar predios):
+      // Ejemplo de llamada a sp_Arbitrios_GetPredioxID (para listar predios):
       // listaPredios = await ApiService.getPrediosPorContriA(contriA);
 
       setState(() {
@@ -388,7 +390,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     }
   }
 
-  // PASOS 3 Y 4: Al seleccionar el predio, ejecutar los procedimientos de resumen y deudas
+  // PASOS 3 Y 4: Al seleccionar el predio, consultar deudas, meses pendientes y pagados
   Future<void> _seleccionarPredioYConsultarDeudas(String idPredio) async {
     setState(() {
       predioSeleccionadoId = idPredio;
@@ -396,19 +398,15 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     });
 
     try {
-      print("Consultando deudas para id_contriA: $idContriA y id_predio: $idPredio");
+      print("Consultando deudas -> id_contriA: $idContriA, id_predio: $idPredio");
 
-      // 1. Resumen de deudas (sp_Arbitrios_GetPredioxID usando id_predio e id_contriA)
-      // resumenDeuda = await ApiService.getResumenDeuda(idContriA!, idPredio);
-
-      // 2. Meses pendientes (sp_Arbitrios_GetDeudaMensualPend usando id_contriA e id_predio)
-      // mesesPendientes = await ApiService.getDeudaMensualPend(idContriA!, idPredio);
-
-      // 3. Recibos pagados (sp_Arbitrios_GetDeudaMensualPagados usando id_contriA e id_predio)
-      // mesesPagados = await ApiService.getDeudaMensualPagados(idContriA!, idPredio);
+      // Aquí ejecutas tus procedimientos pasando id_contriA e id_predio:
+      // 1. Resumen de deuda / predio
+      // 2. sp_Arbitrios_GetDeudaMensualPend(idContriA, idPredio)
+      // 3. sp_Arbitrios_GetDeudaMensualPagados(idContriA, idPredio)
 
     } catch (e) {
-      print("Error al consultar detalles del predio: $e");
+      print("Error al consultar detalles: $e");
     } finally {
       setState(() {
         isLoadingDetalle = false;
@@ -440,7 +438,6 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // --- SELECTOR DE PREDIO (LLENADO CON SP 2) ---
                       const Text(
                         "Seleccione un Predio:",
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -452,7 +449,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                         value: predioSeleccionadoId,
                         items: listaPredios.map((predio) {
                           return DropdownMenuItem<String>(
-                            value: predio['id_predio'].toString(), // Asegúrate de usar el campo id_predio correcto
+                            value: predio['id_predio'].toString(),
                             child: Text("${predio['codigo']} - ${predio['direccion']}"),
                           );
                         }).toList(),
@@ -467,12 +464,11 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                       const Divider(),
                       const SizedBox(height: 10),
 
-                      // --- MOSTRAR RESULTADOS AL SELECCIONAR EL PREDIO ---
                       if (predioSeleccionadoId == null)
                         const Expanded(
                           child: Center(
                             child: Text(
-                              "Seleccione un predio para consultar su resumen, meses pendientes y pagos.",
+                              "Seleccione un predio arriba para ver su resumen de deuda, meses pendientes y pagos.",
                               textAlign: TextAlign.center,
                               style: TextStyle(color: Colors.grey),
                             ),
@@ -486,7 +482,6 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                         Expanded(
                           child: ListView(
                             children: [
-                              // Resumen de Deudas
                               Card(
                                 elevation: 3,
                                 child: Padding(
@@ -496,24 +491,19 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                     children: const [
                                       Text("Resumen de Deuda", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                       SizedBox(height: 8),
-                                      Text("Total Pendiente: S/ --"), // Reemplazar con datos de resumenDeuda
+                                      Text("Total Pendiente: S/ --"),
                                     ],
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 16),
-
-                              // Meses Pendientes (sp_Arbitrios_GetDeudaMensualPend)
-                              const Text("Meses / Períodos Pendientes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              const Text("Períodos / Meses Pendientes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 8),
-                              // Aquí armas tu lista o ListView para mesesPendientes
-
+                              // Lista de meses pendientes
                               const SizedBox(height: 16),
-
-                              // Recibos Pagados (sp_Arbitrios_GetDeudaMensualPagados)
                               const Text("Recibos Pagados", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 8),
-                              // Aquí armas tu lista o ListView para mesesPagados
+                              // Lista de recibos pagados
                             ],
                           ),
                         ),
