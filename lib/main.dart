@@ -450,7 +450,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                         items: listaPredios.map((predio) {
                           return DropdownMenuItem<String>(
                             value: predio['id_predio'].toString(),
-                            child: Text("${predio['codigo']} - ${predio['direccion']}"),
+                            child: Text("${predio['id_predio']} - ${predio['direccion']}"),
                           );
                         }).toList(),
                         onChanged: (nuevoIdPredio) {
