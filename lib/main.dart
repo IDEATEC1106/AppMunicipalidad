@@ -223,7 +223,7 @@ class MenuScreen extends StatelessWidget {
             ),
             const SizedBox(height: 15),
             ElevatedButton(
-              nPressed: () => Navigator.pushNamed(context, '/arbitrios', arguments: usuarioId),
+              onPressed: () => Navigator.pushNamed(context, '/arbitrios', arguments: usuarioId),
               child: const Text("2. ESTADO DE PAGOS DE ARBITRIOS"),
             ),
             const SizedBox(height: 15),
