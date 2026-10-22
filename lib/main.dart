@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _userController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
   bool _isLoading = false;
-  bool _obscurePassword = true; // 👈 Variable para controlar la visibilidad
+  bool _obscurePassword = true;
 
   void _mostrarAlerta(String titulo, String mensaje) {
     showDialog(
@@ -151,13 +151,12 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 20),
               TextField(
                 controller: _passController,
-                obscureText: _obscurePassword, // 👈 Se conecta a la variable de estado
+                obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   labelText: "Clave de Acceso (RUC/LE)",
                   filled: true,
                   fillColor: Colors.white12,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  // 👈 Agregamos el botón del "ojito" aquí:
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -165,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     onPressed: () {
                       setState(() {
-                        _obscurePassword = !_obscurePassword; // Alterna el estado
+                        _obscurePassword = !_obscurePassword;
                       });
                     },
                   ),
@@ -305,9 +304,8 @@ class _DatosScreenState extends State<DatosScreen> {
 }
 
 // ==========================================
-// 4. PANTALLA DE CONTROL ARBITRIOS (CON TABS)
+// 4. PANTALLA DE CONTROL ARBITRIOS
 // ==========================================
-
 class ArbitriosScreen extends StatefulWidget {
   final String rucLe; // Este es el password/ruc_le ingresado en el login
 
@@ -336,6 +334,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     _obtenerIdContriA();
   }
 
+  // PASO 1: Obtener id_codigoA usando el ruc_le del login
   Future<void> _obtenerIdContriA() async {
     setState(() {
       isLoading = true;
@@ -343,39 +342,32 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     });
 
     try {
-      // Usamos la IP de tu servidor y pasamos widget.rucLe (que es el ruc_le / password)
-      final url = Uri.parse('http://192.168.15.253:5000/api/arbitrios/idcontri/${widget.rucLe}');
+      final url = Uri.parse('$apiUrl/api/arbitrios/idcontri/${widget.rucLe}');
       final response = await http.get(url, headers: {"Content-Type": "application/json"});
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
+          idContriA = data['id_codigoA']?.toString();
+          
+          if (idContriA != null && idContriA!.isNotEmpty) {
+            // PASO 2: Con el id_codigoA obtenido, cargamos la relación de predios
+            await _cargarRelacionPredios(idContriA!);
+          } else {
+            setState(() {
+              errorMessage = "No se encontró el identificador del contribuyente (id_codigoA).";
+              isLoading = false;
+            });
+          }
+        } else {
           setState(() {
-            idContriA = data['id_codigoA']?.toString();
+            errorMessage = data['message'] ?? "No se encontró el identificador de arbitrios.";
             isLoading = false;
           });
-          // Aquí puedes continuar cargando los predios con idContriA
         }
       } else {
         setState(() {
-          errorMessage = "No se encontró el identificador del contribuyente.";
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        errorMessage = "Error al conectar con el servidor: $e";
-        isLoading = false;
-      });
-    }
-  }
-
-      if (idContriA != null && idContriA!.isNotEmpty) {
-        // PASO 2: Con el id_contriA obtenido, cargamos los predios (sp_Arbitrios_GetPredioxID)
-        await _cargarRelacionPredios(idContriA!);
-      } else {
-        setState(() {
-          errorMessage = "No se encontró el identificador del contribuyente (id_contriA) para las credenciales proporcionadas.";
+          errorMessage = "Error en la respuesta del servidor (Código ${response.statusCode}).";
           isLoading = false;
         });
       }
@@ -390,10 +382,11 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
   // PASO 2: Obtener la relación de predios usando id_contriA
   Future<void> _cargarRelacionPredios(String contriA) async {
     try {
-      // Ejemplo de llamada a sp_Arbitrios_GetPredioxID (para listar predios):
-      // listaPredios = await ApiService.getPrediosPorContriA(contriA);
-
+      // Aquí puedes integrar la llamada a tu endpoint de predios por id_contriA
+      // Ejemplo: final response = await http.get(Uri.parse('$apiUrl/api/arbitrios/predios/$contriA'));
+      
       setState(() {
+        // listaPredios = ...;
         isLoading = false;
       });
     } catch (e) {
@@ -413,12 +406,10 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
 
     try {
       print("Consultando deudas -> id_contriA: $idContriA, id_predio: $idPredio");
-
-      // Aquí ejecutas tus procedimientos pasando id_contriA e id_predio:
-      // 1. Resumen de deuda / predio
-      // 2. sp_Arbitrios_GetDeudaMensualPend(idContriA, idPredio)
-      // 3. sp_Arbitrios_GetDeudaMensualPagados(idContriA, idPredio)
-
+      // Aquí ejecutarás las consultas usando idContriA e idPredio para:
+      // - Resumen de deudas
+      // - sp_Arbitrios_GetDeudaMensualPend
+      // - sp_Arbitrios_GetDeudaMensualPagados
     } catch (e) {
       print("Error al consultar detalles: $e");
     } finally {
@@ -433,6 +424,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Estado de Pagos de Arbitrios"),
+        backgroundColor: const Color(0xFF0D3B0D),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -473,11 +465,9 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                           }
                         },
                       ),
-                      
                       const SizedBox(height: 20),
                       const Divider(),
                       const SizedBox(height: 10),
-
                       if (predioSeleccionadoId == null)
                         const Expanded(
                           child: Center(
@@ -513,11 +503,9 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                               const SizedBox(height: 16),
                               const Text("Períodos / Meses Pendientes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 8),
-                              // Lista de meses pendientes
                               const SizedBox(height: 16),
                               const Text("Recibos Pagados", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 8),
-                              // Lista de recibos pagados
                             ],
                           ),
                         ),
@@ -573,7 +561,6 @@ class _PredialScreenState extends State<PredialScreen> {
   }
 
   void _mostrarPrediosAnio(String anioFiscal, String usuarioId) async {
-    // Mostrar indicador de carga emergente
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -583,7 +570,6 @@ class _PredialScreenState extends State<PredialScreen> {
     try {
       final response = await http.get(Uri.parse('$apiUrl/api/predios/$anioFiscal/$usuarioId'));
       
-      // Cerrar el indicador de carga
       if (!mounted) return;
       Navigator.pop(context);
 
@@ -591,7 +577,6 @@ class _PredialScreenState extends State<PredialScreen> {
         final data = jsonDecode(response.body);
         final List<dynamic> predios = data["data"] ?? [];
 
-        // Mostrar el BottomSheet con los predios obtenidos
         if (!mounted) return;
         showModalBottomSheet(
           context: context,
@@ -646,7 +631,6 @@ class _PredialScreenState extends State<PredialScreen> {
                                           style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 15),
                                         ),
                                         const SizedBox(height: 6),
-                                        // Etiquetas en amarillo bajito (Colors.amber[200]) y datos en blanco
                                         RichText(
                                           text: TextSpan(
                                             style: const TextStyle(fontSize: 13),
@@ -708,7 +692,6 @@ class _PredialScreenState extends State<PredialScreen> {
     );
   }
   
-  // Vista especializada y ordenada para los Pendientes
   Widget _buildListaPendientes() {
     if (isLoading) return const Center(child: CircularProgressIndicator());
     if (listaPendientes.isEmpty) {
@@ -720,7 +703,6 @@ class _PredialScreenState extends State<PredialScreen> {
       itemCount: listaPendientes.length,
       itemBuilder: (context, index) {
         final item = listaPendientes[index];
-        
         final anioFiscal = item['Año_Fiscal'] ?? item['ANO'] ?? item['ANIO_FISCAL'] ?? item['PERIODO'] ?? 'N/A';
         final baseImponible = item['BaseImponible'] ?? item['BASEIMP'] ?? '0.00';
         final impuesto = item['Impuesto'] ?? item['IMPVAL'] ?? '0.00';
@@ -786,7 +768,6 @@ class _PredialScreenState extends State<PredialScreen> {
     );
   }
 
-  // Vista especializada y ordenada para los Pagados
   Widget _buildListaPagados() {
     if (isLoading) return const Center(child: CircularProgressIndicator());
     if (listaPagados.isEmpty) {
@@ -798,8 +779,6 @@ class _PredialScreenState extends State<PredialScreen> {
       itemCount: listaPagados.length,
       itemBuilder: (context, index) {
         final item = listaPagados[index];
-        
-        // Extrayendo los campos de pagados con alternativas por si varía el nombre exacto de la columna SQL
         final anioFiscal = item['Año_Fiscal'] ?? item['ANO'] ?? item['ANIO_FISCAL'] ?? item['PERIODO'] ?? 'N/A';
         final baseImponible = item['BaseImponible'] ?? item['BASEIMP'] ?? '0.00';
         final impuesto = item['Impuesto'] ?? item['IMPVAL'] ?? '0.00';
