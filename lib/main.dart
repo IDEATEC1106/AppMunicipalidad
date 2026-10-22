@@ -38,7 +38,7 @@ class MunicipalidadApp extends StatelessWidget {
         '/menu': (context) => const MenuScreen(),
         '/datos': (context) => const DatosScreen(),
         '/predial': (context) => const PredialScreen(),
-        '/arbitrios': (context) => ArbitriosScreen(usuarioId: ModalRoute.of(context)!.settings.arguments as String? ?? ""),
+        '/arbitrios': (context) => ArbitriosScreen(idContri: ModalRoute.of(context)!.settings.arguments as String? ?? ""),
       },
     );
   }
