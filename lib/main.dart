@@ -38,6 +38,7 @@ class MunicipalidadApp extends StatelessWidget {
         '/menu': (context) => const MenuScreen(),
         '/datos': (context) => const DatosScreen(),
         '/predial': (context) => const PredialScreen(),
+        '/arbitrios': (context) => ArbitriosScreen(usuarioId: ModalRoute.of(context)!.settings.arguments as String? ?? ""),
       },
     );
   }
@@ -222,7 +223,7 @@ class MenuScreen extends StatelessWidget {
             ),
             const SizedBox(height: 15),
             ElevatedButton(
-              onPressed: () {},
+              nPressed: () => Navigator.pushNamed(context, '/arbitrios', arguments: usuarioId),
               child: const Text("2. ESTADO DE PAGOS DE ARBITRIOS"),
             ),
             const SizedBox(height: 15),
