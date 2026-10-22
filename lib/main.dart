@@ -334,7 +334,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     _obtenerIdContriA();
   }
 
-  // PASO 1: Obtener id_codigoA usando el ruc_le del login
+  // PASO 1: Obtener la relación de predios
   Future<void> _obtenerIdContriA() async {
     setState(() {
       isLoading = true;
@@ -342,15 +342,19 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     });
 
     try {
-      // Usamos el id/código del contribuyente para obtener su relación de predios directamente
       final url = Uri.parse('$apiUrl/api/arbitrios/predios/${widget.rucLe}');
       final response = await http.get(url, headers: {"Content-Type": "application/json"});
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
+          final List<dynamic> predios = data['data'] ?? [];
+          
+          // Si el primer predio trae un id de arbitrios o usamos widget.rucLe como identificador
           setState(() {
-            listaPredios = data['data'] ?? [];
+            listaPredios = predios;
+            // Asignamos idContriA usando el rucLe o el campo que corresponda
+            idContriA = widget.rucLe; 
             isLoading = false;
           });
         } else {
@@ -372,24 +376,6 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
       });
     }
   }
-  
-  // PASO 2: Obtener la relación de predios usando id_contriA
-  Future<void> _cargarRelacionPredios(String contriA) async {
-    try {
-      // Aquí puedes integrar la llamada a tu endpoint de predios por id_contriA
-      // Ejemplo: final response = await http.get(Uri.parse('$apiUrl/api/arbitrios/predios/$contriA'));
-      
-      setState(() {
-        // listaPredios = ...;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        errorMessage = "Error al cargar la relación de predios: $e";
-        isLoading = false;
-      });
-    }
-  }
 
   // PASOS 3 Y 4: Al seleccionar el predio, consultar deudas, meses pendientes y pagados
   Future<void> _seleccionarPredioYConsultarDeudas(String idPredio) async {
@@ -399,10 +385,12 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     });
 
     try {
-      // Llamadas simultáneas a los 3 endpoints de arbitrios
-      final resResumen = await http.get(Uri.parse('$apiUrl/api/arbitrios/resumen/$idContriA/$idPredio'));
-      final resPendientes = await http.get(Uri.parse('$apiUrl/api/arbitrios/pendientes/$idContriA/$idPredio'));
-      final resPagados = await http.get(Uri.parse('$apiUrl/api/arbitrios/pagados/$idContriA/$idPredio'));
+      // Usamos idContriA (o widget.rucLe) e idPredio para las consultas
+      final contri = idContriA ?? widget.rucLe;
+      
+      final resResumen = await http.get(Uri.parse('$apiUrl/api/arbitrios/resumen/$contri/$idPredio'));
+      final resPendientes = await http.get(Uri.parse('$apiUrl/api/arbitrios/pendientes/$contri/$idPredio'));
+      final resPagados = await http.get(Uri.parse('$apiUrl/api/arbitrios/pagados/$contri/$idPredio'));
 
       if (resResumen.statusCode == 200 && resPendientes.statusCode == 200 && resPagados.statusCode == 200) {
         final dataResumen = jsonDecode(resResumen.body);
@@ -463,9 +451,11 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                         hint: const Text("-- Seleccione un predio --"),
                         value: predioSeleccionadoId,
                         items: listaPredios.map((predio) {
+                          final idPredioVal = (predio['id_predio'] ?? predio['ID_PREDIO'] ?? predio['codigo']).toString();
+                          final dirVal = predio['direccion'] ?? predio['DIRECCION'] ?? '';
                           return DropdownMenuItem<String>(
-                            value: predio['id_predio'].toString(),
-                            child: Text("${predio['id_predio']} - ${predio['direccion']}"),
+                            value: idPredioVal,
+                            child: Text("$idPredioVal - $dirVal"),
                           );
                         }).toList(),
                         onChanged: (nuevoIdPredio) {
@@ -495,26 +485,63 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                         Expanded(
                           child: ListView(
                             children: [
+                              // 1. RESUMEN DE DEUDA
                               Card(
                                 elevation: 3,
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: const [
-                                      Text("Resumen de Deuda", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                      SizedBox(height: 8),
-                                      Text("Total Pendiente: S/ --"),
+                                    children: [
+                                      const Text("Resumen de Deuda", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                      const SizedBox(height: 8),
+                                      Text("Total Pendiente: S/ ${resumenDeuda?['total_deuda'] ?? resumenDeuda?['TOTAL'] ?? '0.00'}"),
                                     ],
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 16),
+                              
+                              // 2. MESES PENDIENTES
                               const Text("Períodos / Meses Pendientes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 8),
+                              mesesPendientes.isEmpty
+                                  ? const Text("No hay meses pendientes.", style: TextStyle(color: Colors.grey))
+                                  : ListView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      itemCount: mesesPendientes.length,
+                                      itemBuilder: (context, index) {
+                                        final item = mesesPendientes[index];
+                                        return Card(
+                                          child: ListTile(
+                                            title: Text("Mes/Periodo: ${item['mes'] ?? item['PERIODO'] ?? 'N/A'}"),
+                                            subtitle: Text("Monto: S/ ${item['monto'] ?? item['TOTAL'] ?? '0.00'}"),
+                                          ),
+                                        );
+                                      },
+                                    ),
                               const SizedBox(height: 16),
+
+                              // 3. RECIBOS PAGADOS
                               const Text("Recibos Pagados", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 8),
+                              mesesPagados.isEmpty
+                                  ? const Text("No hay recibos pagados registrados.", style: TextStyle(color: Colors.grey))
+                                  : ListView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      itemCount: mesesPagados.length,
+                                      itemBuilder: (context, index) {
+                                        final item = mesesPagados[index];
+                                        return Card(
+                                          child: ListTile(
+                                            title: Text("Recibo: ${item['recibo'] ?? item['CAJA'] ?? 'N/A'}"),
+                                            subtitle: Text("Fecha/Monto: S/ ${item['monto'] ?? item['TOTAL'] ?? '0.00'}"),
+                                          ),
+                                        );
+                                      },
+                                    ),
                             ],
                           ),
                         ),
