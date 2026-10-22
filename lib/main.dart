@@ -342,9 +342,11 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     });
 
     try {
-      // 1. Asegúrate de que use '$apiUrl' y el parámetro correcto ${widget.rucLe}
+      // Si el endpoint de Flask necesita el código de contribuyente (usuario), cámbialo aquí:
       final url = Uri.parse('$apiUrl/api/arbitrios/idcontri/${widget.rucLe}');
-      print("Consultando URL: $url"); // Esto saldrá en tu consola de depuración para verificar
+      
+      // O si prefieres pasarle directamente el endpoint correcto que busque por el ID del contribuyente:
+      // final url = Uri.parse('$apiUrl/api/arbitrios/idcontri/${widget.rucLe}');
 
       final response = await http.get(url, headers: {"Content-Type": "application/json"});
 
@@ -354,22 +356,20 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
           idContriA = data['id_codigoA']?.toString();
           
           if (idContriA != null && idContriA!.isNotEmpty) {
-            // PASO 2: Con el id_codigoA obtenido, cargamos la relación de predios
             await _cargarRelacionPredios(idContriA!);
           } else {
             setState(() {
-              errorMessage = "No se encontró el identificador del contribuyente (id_codigoA).";
+              errorMessage = "No se encontró el identificador (id_codigoA).";
               isLoading = false;
             });
           }
         } else {
           setState(() {
-            errorMessage = data['message'] ?? "No se encontró el identificador de arbitrios.";
+            errorMessage = data['message'] ?? "No se encontró el registro.";
             isLoading = false;
           });
         }
       } else {
-        // Si te sigue dando 404, imprime qué URL intentó buscar exactamente
         setState(() {
           errorMessage = "Error en el servidor (Código ${response.statusCode}) para la ruta: ${url.path}";
           isLoading = false;
@@ -382,7 +382,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
       });
     }
   }
-
+  
   // PASO 2: Obtener la relación de predios usando id_contriA
   Future<void> _cargarRelacionPredios(String contriA) async {
     try {
