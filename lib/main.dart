@@ -350,11 +350,13 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
         if (data['success'] == true) {
           final List<dynamic> predios = data['data'] ?? [];
           
-          // Si el primer predio trae un id de arbitrios o usamos widget.rucLe como identificador
+          // 🛠️ AQUÍ ESTÁ LA CLAVE: Capturamos el id_codigoA real que devuelve tu API/SQL Server
+          // (Asegúrate de que la llave en el JSON de tu Flask se llame 'id_codigoA', 'id_contriA' o similar)
+          final contriAEncontrado = data['id_codigoA'] ?? data['id_contriA'] ?? widget.rucLe;
+
           setState(() {
             listaPredios = predios;
-            // Asignamos idContriA usando el rucLe o el campo que corresponda
-            idContriA = widget.rucLe; 
+            idContriA = contriAEncontrado.toString(); // Guardamos el valor real del procedimiento
             isLoading = false;
           });
         } else {
@@ -376,7 +378,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
       });
     }
   }
-
+  
   // PASOS 3 Y 4: Al seleccionar el predio, consultar deudas, meses pendientes y pagados
   Future<void> _seleccionarPredioYConsultarDeudas(String idPredio) async {
     setState(() {
