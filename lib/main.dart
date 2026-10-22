@@ -337,41 +337,42 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
   }
 
   // PASO 1: Usar ruc_le para ejecutar sp_Arbitrios_GetIDContriA y obtener id_contriA
-  Future<void> _obtenerIdContriAConRucLe() async {
-    setState(() {
-      isLoading = true;
-      errorMessage = "";
-    });
+ Future<void> _obtenerIdContriAConRucLe() async {
+  setState(() {
+    isLoading = true;
+    errorMessage = "";
+  });
 
-    try {
-      print("Consultando id_contriA usando ruc_le (password): ${widget.rucLe}");
+  try {
+    // 1. Petición GET enviando el ruc_le (password) en la URL tal como lo espera Flask
+    final url = Uri.parse('http://TU_IP_O_DOMINIO/api/arbitrios/idcontri/${widget.rucLe}');
+    final response = await http.get(url, headers: {"Content-Type": "application/json"});
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
       
-      // Ejemplo de llamada a tu API para sp_Arbitrios_GetIDContriA:
-      // final response = await http.post(Uri.parse('$apiUrl/api/arbitrios/get_id_contri_a'),
-      //     headers: {"Content-Type": "application/json"},
-      //     body: jsonEncode({"ruc_le": widget.rucLe}));
-      // 
-      // if (response.statusCode == 200) {
-      //   final data = jsonDecode(response.body);
-      //   idContriA = data['id_contriA']?.toString();
-      // }
-
-      if (idContriA != null && idContriA!.isNotEmpty) {
-        // PASO 2: Con el id_contriA obtenido, cargamos los predios (sp_Arbitrios_GetPredioxID)
-        await _cargarRelacionPredios(idContriA!);
-      } else {
-        setState(() {
-          errorMessage = "No se encontró el identificador del contribuyente (id_contriA) para las credenciales proporcionadas.";
-          isLoading = false;
-        });
+      // 2. Verificamos que sea exitoso y leemos la clave exacta que devuelve tu API: 'id_codigoA'
+      if (data['success'] == true) {
+        idContriA = data['id_codigoA']?.toString();
       }
-    } catch (e) {
+    }
+
+    if (idContriA != null && idContriA!.isNotEmpty) {
+      // 3. Si ya lo tenemos, pasamos al paso 2: cargar los predios con sp_Arbitrios_GetPredioxID
+      await _cargarRelacionPredios(idContriA!);
+    } else {
       setState(() {
-        errorMessage = "Error al conectar con el servidor: $e";
+        errorMessage = "No se encontró el identificador del contribuyente para las credenciales proporcionadas.";
         isLoading = false;
       });
     }
+  } catch (e) {
+    setState(() {
+      errorMessage = "Error al conectar con el servidor: $e";
+      isLoading = false;
+    });
   }
+}
 
   // PASO 2: Obtener la relación de predios usando id_contriA
   Future<void> _cargarRelacionPredios(String contriA) async {
