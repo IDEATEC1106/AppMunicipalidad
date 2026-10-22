@@ -333,28 +333,42 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
   @override
   void initState() {
     super.initState();
-    _obtenerIdContriAConRucLe();
+    _obtenerIdContriA();
   }
 
-  // PASO 1: Usar ruc_le para ejecutar sp_Arbitrios_GetIDContriA y obtener id_contriA
-  Future<void> _obtenerIdContriAConRucLe() async {
+  Future<void> _obtenerIdContriA() async {
     setState(() {
       isLoading = true;
       errorMessage = "";
     });
 
     try {
-      print("Consultando id_contriA usando ruc_le (password): ${widget.rucLe}");
-      
-      // Ejemplo de llamada a tu API para sp_Arbitrios_GetIDContriA:
-      // final response = await http.post(Uri.parse('$apiUrl/api/arbitrios/get_id_contri_a'),
-      //     headers: {"Content-Type": "application/json"},
-      //     body: jsonEncode({"ruc_le": widget.rucLe}));
-      // 
-      // if (response.statusCode == 200) {
-      //   final data = jsonDecode(response.body);
-      //   idContriA = data['id_contriA']?.toString();
-      // }
+      // Usamos la IP de tu servidor y pasamos widget.rucLe (que es el ruc_le / password)
+      final url = Uri.parse('http://192.168.15.253:5000/api/arbitrios/idcontri/${widget.rucLe}');
+      final response = await http.get(url, headers: {"Content-Type": "application/json"});
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            idContriA = data['id_codigoA']?.toString();
+            isLoading = false;
+          });
+          // Aquí puedes continuar cargando los predios con idContriA
+        }
+      } else {
+        setState(() {
+          errorMessage = "No se encontró el identificador del contribuyente.";
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = "Error al conectar con el servidor: $e";
+        isLoading = false;
+      });
+    }
+  }
 
       if (idContriA != null && idContriA!.isNotEmpty) {
         // PASO 2: Con el id_contriA obtenido, cargamos los predios (sp_Arbitrios_GetPredioxID)
