@@ -307,135 +307,159 @@ class _DatosScreenState extends State<DatosScreen> {
 // ==========================================
 // 4. PANTALLA DE CONTROL ARBITRIOS (CON TABS)
 // ==========================================
+import 'package:flutter/material.dart';
+// Importa tu servicio HTTP o controlador de API
+// import '../services/api_service.dart';
+
 class ArbitriosScreen extends StatefulWidget {
-  final String usuarioId;
-  const ArbitriosScreen({Key? key, required this.usuarioId}) : super(key: key);
+  final String idContri; // Recibido desde el login o menú principal
+
+  const ArbitriosScreen({Key? key, required this.idContri}) : super(key: key);
 
   @override
   State<ArbitriosScreen> createState() => _ArbitriosScreenState();
 }
 
 class _ArbitriosScreenState extends State<ArbitriosScreen> {
+  bool isLoading = true;
+  String? rucLe;
+  String errorMessage = "";
+
+  // Listas y datos para los arbitrios
   List<dynamic> listaPredios = [];
   String? predioSeleccionadoId;
-  
   Map<String, dynamic>? resumenDeuda;
   List<dynamic> mesesPendientes = [];
-  List<dynamic> historialPagos = [];
-  bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _cargarPrediosDelContribuyente();
+    _inicializarDatosContribuyente();
   }
 
-  Future<void> _cargarPrediosDelContribuyente() async {
-    // 1. Cargar la lista de predios del usuario antes de mostrar los tabs de deudas
-    // Ejemplo:
-    // final predios = await ApiService.getPredios(widget.usuarioId);
-    setState(() {
-      // listaPredios = predios;
-    });
-  }
-
-  Future<void> _cargarDetalleArbitrios(String predioId) async {
+  // Paso 1: Ejecutar la obtención de datos con el id_contri para extraer ruc_le
+  Future<void> _inicializarDatosContribuyente() async {
     setState(() {
       isLoading = true;
-      predioSeleccionadoId = predioId;
+      errorMessage = "";
     });
 
-    // 2. Al seleccionar el predio, recién consultamos la deuda y meses pendientes
-    // resumenDeuda = await ApiService.getResumenArbitrios(predioId);
-    // mesesPendientes = await ApiService.getMesesPendientes(predioId);
-    // historialPagos = await ApiService.getPagos(predioId);
+    try {
+      print("Consultando datos para id_contri: ${widget.idContri}");
+      
+      // Llamada a tu API que ejecuta el SP de SQL Server (_ObtieneDatosContribuxID_sp)
+      // Ejemplo: final resultado = await ApiService.obtenerDatosContribuyente(widget.idContri);
+      
+      // Simulación de la respuesta obtenida del procedimiento:
+      // rucLe = resultado['ruc_le']; 
 
-    setState(() {
-      isLoading = false;
-    });
+      if (rucLe != null && rucLe!.isNotEmpty) {
+        // Paso 2: Con el ruc_le obtenido, cargamos los predios o deudas de arbitrios
+        await _cargarPrediosYArbitrios(rucLe!);
+      } else {
+        setState(() {
+          errorMessage = "No se encontró el RUC/LE para este contribuyente.";
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = "Error al conectar con el servidor: $e";
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _cargarPrediosYArbitrios(String ruc) async {
+    try {
+      // Aquí llamas a los siguientes procedimientos usando el rucLe
+      // listaPredios = await ApiService.getPrediosPorRuc(ruc);
+      
+      setState(() {
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = "Error al cargar los predios: $e";
+        isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Estado de Pagos de Arbitrios")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- PASO 1: SELECCIÓN DE PREDIO (FUERA DE LOS TABS) ---
-            const Text(
-              "1. Seleccione un Predio:",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              isExpanded: true,
-              hint: const Text("-- Seleccione predio --"),
-              value: predioSeleccionadoId,
-              items: listaPredios.map((predio) {
-                return DropdownMenuItem<String>(
-                  value: predio['id'].toString(),
-                  child: Text("${predio['codigo']} - ${predio['direccion']}"),
-                );
-              }).toList(),
-              onChanged: (nuevoId) {
-                if (nuevoId != null) {
-                  _cargarDetalleArbitrios(nuevoId);
-                }
-              },
-            ),
-            const SizedBox(height: 20),
-            const Divider(),
-            const SizedBox(height: 10),
+      appBar: AppBar(
+        title: const Text("Estado de Pagos de Arbitrios"),
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage.isNotEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      errorMessage,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red, fontSize: 16),
+                    ),
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Mostrar información del RUC recuperado (opcional para depuración o UI)
+                      Text(
+                        "RUC / LE: ${rucLe ?? 'No disponible'}",
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 16),
 
-            // --- PASO 2: RESUMEN Y DETALLE (CONDICIONAL) ---
-            if (predioSeleccionadoId == null)
-              const Expanded(
-                child: Center(
-                  child: Text(
-                    "Seleccione un predio arriba para ver su resumen de deuda, meses pendientes y pagos.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
+                      // Selector de Predios
+                      const Text(
+                        "Seleccione un Predio:",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        hint: const Text("-- Seleccione un predio --"),
+                        value: predioSeleccionadoId,
+                        items: listaPredios.map((predio) {
+                          return DropdownMenuItem<String>(
+                            value: predio['id'].toString(),
+                            child: Text("${predio['codigo']} - ${predio['direccion']}"),
+                          );
+                        }).toList(),
+                        onChanged: (nuevoId) {
+                          setState(() {
+                            predioSeleccionadoId = nuevoId;
+                          });
+                          // Aquí disparas la consulta del resumen de deuda para el predio elegido
+                        },
+                      ),
+                      
+                      const SizedBox(height: 20),
+                      const Divider(),
+                      
+                      // Resto de la interfaz para mostrar meses pendientes y pagos...
+                      if (predioSeleccionadoId == null)
+                        const Expanded(
+                          child: Center(
+                            child: Text("Seleccione un predio para ver el resumen de deudas."),
+                          ),
+                        )
+                      else
+                        const Expanded(
+                          child: Center(
+                            child: Text("Aquí se muestra el resumen de deuda y meses pendientes."),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              )
-            else if (isLoading)
-              const Expanded(
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else
-              Expanded(
-                child: ListView(
-                  children: [
-                    // Resumen de Deuda
-                    Card(
-                      elevation: 3,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text("Resumen de Deuda", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            SizedBox(height: 8),
-                            // Mostrar totales calculados
-                            Text("Total Pendiente: S/ ..."),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Meses Pendientes / Detalle de Arbitrios
-                    const Text("Meses / Períodos Pendientes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    // Aquí iría tu lista o TabController con los meses pendientes y pagos
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
     );
   }
 }
