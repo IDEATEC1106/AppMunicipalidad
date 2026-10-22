@@ -4,7 +4,9 @@ import 'dart:convert';
 import 'dart:io';
 
 // URL de tu API backend intermediaria
-const String apiUrl = "http://38.224.68.171:5001";
+//const String apiUrl = "http://38.224.68.171:5001";
+// Por la IP de tu red local donde corre Flask:
+const String apiUrl = "http://192.168.15.253:5001";
 
 void main() {
   HttpOverrides.global = MyHttpOverrides();
