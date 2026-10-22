@@ -399,14 +399,29 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     });
 
     try {
-      print("Consultando deudas -> id_contriA: $idContriA, id_predio: $idPredio");
-      // Aquí ejecutarás las consultas usando idContriA e idPredio para:
-      // - Resumen de deudas
-      // - sp_Arbitrios_GetDeudaMensualPend
-      // - sp_Arbitrios_GetDeudaMensualPagados
+      // Llamadas simultáneas a los 3 endpoints de arbitrios
+      final resResumen = await http.get(Uri.parse('$apiUrl/api/arbitrios/resumen/$idContriA/$idPredio'));
+      final resPendientes = await http.get(Uri.parse('$apiUrl/api/arbitrios/pendientes/$idContriA/$idPredio'));
+      final resPagados = await http.get(Uri.parse('$apiUrl/api/arbitrios/pagados/$idContriA/$idPredio'));
+
+      if (resResumen.statusCode == 200 && resPendientes.statusCode == 200 && resPagados.statusCode == 200) {
+        final dataResumen = jsonDecode(resResumen.body);
+        final dataPendientes = jsonDecode(resPendientes.body);
+        final dataPagados = jsonDecode(resPagados.body);
+
+        setState(() {
+          resumenDeuda = dataResumen["data"] ?? {};
+          mesesPendientes = dataPendientes["data"] ?? [];
+          mesesPagados = dataPagados["data"] ?? [];
+          isLoadingDetalle = false;
+        });
+      } else {
+        setState(() {
+          isLoadingDetalle = false;
+        });
+      }
     } catch (e) {
-      print("Error al consultar detalles: $e");
-    } finally {
+      print("Error al consultar detalles de arbitrios: $e");
       setState(() {
         isLoadingDetalle = false;
       });
