@@ -563,7 +563,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
   }
 }
 
-  // PASOS 3 Y 4: Al seleccionar el predio, consultar deudas, meses pendientes y pagados
+// PASOS 3 Y 4: Al seleccionar el predio, consultar deudas, meses pendientes y pagados
   Future<void> _seleccionarPredioYConsultarDeudas(String idPredio) async {
     setState(() {
       predioSeleccionadoId = idPredio;
