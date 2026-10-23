@@ -538,12 +538,14 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                               itemCount: mesesPagados.length,
                                               itemBuilder: (context, index) {
                                                 final item = mesesPagados[index];
-                                                final recibo = item['Nro_Recibo'] ?? item['CAJA'] ?? item['nro_recibo'] ?? 'N/A';
+                                                //final recibo = item['Nro_Recibo'] ?? item['CAJA'] ?? item['nro_recibo'] ?? 'N/A';
+                                                final pagado = item['Mes_Pagado'] ?? item['PERIODO'] ?? item['ano'] ?? 'N/A';
                                                 final montoPagado = item['Total_Cancelado'] ?? item['TOTAL'] ?? '0.00';
                                                 return Card(
                                                   child: ListTile(
                                                     leading: const Icon(Icons.check_circle, color: Colors.green),
-                                                    title: Text("Recibo / Ref: $recibo"),
+                                                    //title: Text("Recibo / Ref: $recibo"),
+                                                    title: Text("Período / Mes: $pagado"),
                                                     trailing: Text("S/ $montoPagado", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
                                                   ),
                                                 );
