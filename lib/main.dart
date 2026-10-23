@@ -411,7 +411,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final totalVal = resumenDeuda['total'] ?? resumenDeuda['TOTAL'] ?? resumenDeuda['total_deuda'] ?? '0.00';
+    final totalVal = resumenDeuda['deuda_total'] ?? resumenDeuda['TOTAL'] ?? resumenDeuda['total_deuda'] ?? '0.00';
     final desdeVal = resumenDeuda['desde'] ?? resumenDeuda['DESDE'] ?? resumenDeuda['anio_desde'] ?? '-';
     final hastaVal = resumenDeuda['hasta'] ?? resumenDeuda['HASTA'] ?? resumenDeuda['anio_hasta'] ?? '-';
 
@@ -492,7 +492,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text("Resumen de Deuda", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0D3B0D))),
+                                        const Text("Resumen de Deuda", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.redAccent)),
                                         const Divider(),
                                         const SizedBox(height: 4),
                                         Row(
@@ -521,8 +521,8 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                               itemCount: mesesPendientes.length,
                                               itemBuilder: (context, index) {
                                                 final item = mesesPendientes[index];
-                                                final periodo = item['mes'] ?? item['PERIODO'] ?? item['ano'] ?? 'N/A';
-                                                final monto = item['monto'] ?? item['TOTAL'] ?? item['deuda'] ?? '0.00';
+                                                final periodo = item['Mes_Deuda'] ?? item['PERIODO'] ?? item['ano'] ?? 'N/A';
+                                                final monto = item['Total_Pendiente'] ?? item['TOTAL'] ?? item['deuda'] ?? '0.00';
                                                 return Card(
                                                   child: ListTile(
                                                     leading: const Icon(Icons.calendar_today, color: Colors.orange),
@@ -538,8 +538,8 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                               itemCount: mesesPagados.length,
                                               itemBuilder: (context, index) {
                                                 final item = mesesPagados[index];
-                                                final recibo = item['recibo'] ?? item['CAJA'] ?? item['nro_recibo'] ?? 'N/A';
-                                                final montoPagado = item['monto'] ?? item['TOTAL'] ?? '0.00';
+                                                final recibo = item['Nro_Recibo'] ?? item['CAJA'] ?? item['nro_recibo'] ?? 'N/A';
+                                                final montoPagado = item['Total_Cancelado'] ?? item['TOTAL'] ?? '0.00';
                                                 return Card(
                                                   child: ListTile(
                                                     leading: const Icon(Icons.check_circle, color: Colors.green),
