@@ -516,41 +516,149 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                   child: TabBarView(
                                     children: [
                                       mesesPendientes.isEmpty
-                                          ? const Center(child: Text("No registra deudas pendientes."))
-                                          : ListView.builder(
-                                              itemCount: mesesPendientes.length,
-                                              itemBuilder: (context, index) {
-                                                final item = mesesPendientes[index];
-                                                final periodo = item['Mes_Deuda'] ?? item['PERIODO'] ?? item['ano'] ?? 'N/A';
-                                                final monto = item['Total_Pendiente'] ?? item['TOTAL'] ?? item['deuda'] ?? '0.00';
-                                                return Card(
-                                                  child: ListTile(
-                                                    leading: const Icon(Icons.calendar_today, color: Colors.orange),
-                                                    title: Text("Período / Mes: $periodo"),
-                                                    trailing: Text("S/ $monto", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                                        ? const Center(child: Text("No registra deudas pendientes."))
+                                        : ListView.builder(
+                                            itemCount: mesesPendientes.length,
+                                            itemBuilder: (context, index) {
+                                              final item = mesesPendientes[index];
+                                              final periodo = item['Mes_Deuda'] ?? item['PERIODO'] ?? item['ano'] ?? 'N/A';
+                                              final monto = item['Total_Pendiente'] ?? item['TOTAL'] ?? item['deuda'] ?? '0.00';
+                                              
+                                              return Card(
+                                                child: ListTile(
+                                                  leading: const Icon(Icons.calendar_today, color: Colors.orange),
+                                                  title: Text("Período / Mes: $periodo"),
+                                                  trailing: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Text("S/ $monto", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                                                      const SizedBox(width: 8),
+                                                      const Icon(Icons.chevron_right, color: Colors.white54),
+                                                    ],
                                                   ),
-                                                );
-                                              },
-                                            ),
+                                                  onTap: () {
+                                                    // Muestra la ventana emergente con el desglose de deuda pendiente
+                                                    showModalBottomSheet(
+                                                      context: context,
+                                                      backgroundColor: const Color(0xFF1E3A1E),
+                                                      shape: const RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                                      ),
+                                                      builder: (context) {
+                                                        return Padding(
+                                                          padding: const EdgeInsets.all(20.0),
+                                                          child: Column(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                            children: [
+                                                              Text("Detalle de Deuda - Período: $periodo", 
+                                                                style: const TextStyle(color: Colors.amber, fontSize: 18, fontWeight: FontWeight.bold)),
+                                                              const Divider(color: Colors.white24),
+                                                              const SizedBox(height: 8),
+                                                              Text("• Barrido de Calles: S/ ${item['Barrido'] ?? item['BARRIDO'] ?? '0.00'}"),
+                                                              const SizedBox(height: 6),
+                                                              Text("• Recojo de Residuos: S/ ${item['Recojo'] ?? item['RECOJO'] ?? '0.00'}"),
+                                                              const SizedBox(height: 6),
+                                                              Text("• Parques y Jardines: S/ ${item['Parques'] ?? item['PARQUES'] ?? '0.00'}"),
+                                                              const SizedBox(height: 6),
+                                                              Text("• Serenazgo: S/ ${item['Serenazgo'] ?? item['SERENAZGO'] ?? '0.00'}"),
+                                                              const SizedBox(height: 6),
+                                                              Text("• Intereses: S/ ${item['Intereses'] ?? item['INTERESES'] ?? '0.00'}"),
+                                                              const Divider(color: Colors.white24),
+                                                              Row(
+                                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                                children: [
+                                                                  const Text("Total Pendiente:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                                                  Text("S/ $monto", style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+                                                                ],
+                                                              ),
+                                                              const SizedBox(height: 16),
+                                                            ],
+                                                          ),
+                                                        );
+                                                      },
+                                                    );
+                                                  },
+                                                ),
+                                              );
+                                            },
+                                          ),
                                       mesesPagados.isEmpty
-                                          ? const Center(child: Text("No registra recibos pagados."))
-                                          : ListView.builder(
-                                              itemCount: mesesPagados.length,
-                                              itemBuilder: (context, index) {
-                                                final item = mesesPagados[index];
-                                                //final recibo = item['Nro_Recibo'] ?? item['CAJA'] ?? item['nro_recibo'] ?? 'N/A';
-                                                final pagado = item['Mes_Pagado'] ?? item['PERIODO'] ?? item['ano'] ?? 'N/A';
-                                                final montoPagado = item['Total_Cancelado'] ?? item['TOTAL'] ?? '0.00';
-                                                return Card(
-                                                  child: ListTile(
-                                                    leading: const Icon(Icons.check_circle, color: Colors.green),
-                                                    //title: Text("Recibo / Ref: $recibo"),
-                                                    title: Text("Período / Mes: $pagado"),
-                                                    trailing: Text("S/ $montoPagado", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                                        ? const Center(child: Text("No registra recibos pagados."))
+                                        : ListView.builder(
+                                            itemCount: mesesPagados.length,
+                                            itemBuilder: (context, index) {
+                                              final item = mesesPagados[index];
+                                              final pagado = item['Mes_Pagado'] ?? item['PERIODO'] ?? item['ano'] ?? 'N/A';
+                                              final montoPagado = item['Total_Cancelado'] ?? item['TOTAL'] ?? '0.00';
+                                              final nroRecibo = item['Nro_Recibo'] ?? item['RECIBO'] ?? 'N/A';
+                                              final nroCaja = item['Nro_Caja'] ?? item['CAJA'] ?? 'N/A';
+                                              final fechaPago = item['Fecha_Pago'] ?? item['FECHA'] ?? 'N/A';
+                                    
+                                              return Card(
+                                                child: ListTile(
+                                                  leading: const Icon(Icons.check_circle, color: Colors.green),
+                                                  title: Text("Período / Mes: $pagado"),
+                                                  subtitle: Text("Recibo N°: $nroRecibo", style: const TextStyle(color: Colors.white70)),
+                                                  trailing: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Text("S/ $montoPagado", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                                                      const SizedBox(width: 8),
+                                                      const Icon(Icons.chevron_right, color: Colors.white54),
+                                                    ],
                                                   ),
-                                                );
-                                              },
-                                            ),
+                                                  onTap: () {
+                                                    // Muestra la ventana emergente con el detalle del pago realizado
+                                                    showModalBottomSheet(
+                                                      context: context,
+                                                      backgroundColor: const Color(0xFF1E3A1E),
+                                                      shape: const RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                                      ),
+                                                      builder: (context) {
+                                                        return Padding(
+                                                          padding: const EdgeInsets.all(20.0),
+                                                          child: Column(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                            children: [
+                                                              Text("Detalle de Pago - Período: $pagado", 
+                                                                style: const TextStyle(color: Colors.amber, fontSize: 18, fontWeight: FontWeight.bold)),
+                                                              const Divider(color: Colors.white24),
+                                                              const SizedBox(height: 8),
+                                                              Text("• Nro. de Recibo: $nroRecibo"),
+                                                              const SizedBox(height: 6),
+                                                              Text("• Barrido de Calles: S/ ${item['Barrido'] ?? item['BARRIDO'] ?? '0.00'}"),
+                                                              const SizedBox(height: 6),
+                                                              Text("• Recojo de Residuos: S/ ${item['Recojo'] ?? item['RECOJO'] ?? '0.00'}"),
+                                                              const SizedBox(height: 6),
+                                                              Text("• Parques y Jardines: S/ ${item['Parques'] ?? item['PARQUES'] ?? '0.00'}"),
+                                                              const SizedBox(height: 6),
+                                                              Text("• Serenazgo: S/ ${item['Serenazgo'] ?? item['SERENAZGO'] ?? '0.00'}"),
+                                                              const SizedBox(height: 6),
+                                                              Text("• Nro. de Caja: $nroCaja"),
+                                                              const SizedBox(height: 6),
+                                                              Text("• Fecha de Pago: $fechaPago"),
+                                                              const Divider(color: Colors.white24),
+                                                              Row(
+                                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                                children: [
+                                                                  const Text("Total Cancelado:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                                                  Text("S/ $montoPagado", style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+                                                                ],
+                                                              ),
+                                                              const SizedBox(height: 16),
+                                                            ],
+                                                          ),
+                                                        );
+                                                      },
+                                                    );
+                                                  },
+                                                ),
+                                              );
+                                            },
+                                          ),
                                     ],
                                   ),
                                 ),
