@@ -563,181 +563,6 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
   }
 }
 
-// PASOS 3 Y 4: Al seleccionar el predio, consultar deudas, meses pendientes y pagados
-  Future<void> _seleccionarPredioYConsultarDeudas(String idPredio) async {
-    setState(() {
-      predioSeleccionadoId = idPredio;
-      isLoadingDetalle = true;
-    });
-
-    try {
-      // Usamos idContriA (o widget.rucLe) e idPredio para las consultas
-      final contri = idContriA ?? widget.rucLe;
-      
-      final resResumen = await http.get(Uri.parse('$apiUrl/api/arbitrios/resumen/$contri/$idPredio'));
-      final resPendientes = await http.get(Uri.parse('$apiUrl/api/arbitrios/pendientes/$contri/$idPredio'));
-      final resPagados = await http.get(Uri.parse('$apiUrl/api/arbitrios/pagados/$contri/$idPredio'));
-
-      if (resResumen.statusCode == 200 && resPendientes.statusCode == 200 && resPagados.statusCode == 200) {
-        final dataResumen = jsonDecode(resResumen.body);
-        final dataPendientes = jsonDecode(resPendientes.body);
-        final dataPagados = jsonDecode(resPagados.body);
-
-        setState(() {
-          resumenDeuda = dataResumen["data"] ?? {};
-          mesesPendientes = dataPendientes["data"] ?? [];
-          mesesPagados = dataPagados["data"] ?? [];
-          isLoadingDetalle = false;
-        });
-      } else {
-        setState(() {
-          isLoadingDetalle = false;
-        });
-      }
-    } catch (e) {
-      print("Error al consultar detalles de arbitrios: $e");
-      setState(() {
-        isLoadingDetalle = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Estado de Pagos de Arbitrios"),
-        backgroundColor: const Color(0xFF0D3B0D),
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage.isNotEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      errorMessage,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red, fontSize: 16),
-                    ),
-                  ),
-                )
-              : Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Seleccione un Predio:",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        isExpanded: true,
-                        hint: const Text("-- Seleccione un predio --"),
-                        value: predioSeleccionadoId,
-                        items: listaPredios.map((predio) {
-                          final idPredioVal = (predio['id_predio'] ?? predio['ID_PREDIO'] ?? predio['codigo']).toString();
-                          final dirVal = predio['direccion'] ?? predio['DIRECCION'] ?? '';
-                          return DropdownMenuItem<String>(
-                            value: idPredioVal,
-                            child: Text("$idPredioVal - $dirVal"),
-                          );
-                        }).toList(),
-                        onChanged: (nuevoIdPredio) {
-                          if (nuevoIdPredio != null) {
-                            _seleccionarPredioYConsultarDeudas(nuevoIdPredio);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      const Divider(),
-                      const SizedBox(height: 10),
-                      if (predioSeleccionadoId == null)
-                        const Expanded(
-                          child: Center(
-                            child: Text(
-                              "Seleccione un predio arriba para ver su resumen de deuda, meses pendientes y pagos.",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ),
-                        )
-                      else if (isLoadingDetalle)
-                        const Expanded(
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      else
-                        Expanded(
-                          child: ListView(
-                            children: [
-                              // 1. RESUMEN DE DEUDA
-                              Card(
-                                elevation: 3,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text("Resumen de Deuda", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                      const SizedBox(height: 8),
-                                      Text("Total Pendiente: S/ ${resumenDeuda?['total_deuda'] ?? resumenDeuda?['TOTAL'] ?? '0.00'}"),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              // 2. MESES PENDIENTES
-                              const Text("Períodos / Meses Pendientes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 8),
-                              mesesPendientes.isEmpty
-                                  ? const Text("No hay meses pendientes.", style: TextStyle(color: Colors.grey))
-                                  : ListView.builder(
-                                      shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      itemCount: mesesPendientes.length,
-                                      itemBuilder: (context, index) {
-                                        final item = mesesPendientes[index];
-                                        return Card(
-                                          child: ListTile(
-                                            title: Text("Mes/Periodo: ${item['mes'] ?? item['PERIODO'] ?? 'N/A'}"),
-                                            subtitle: Text("Monto: S/ ${item['monto'] ?? item['TOTAL'] ?? '0.00'}"),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                              const SizedBox(height: 16),
-
-                              // 3. RECIBOS PAGADOS
-                              const Text("Recibos Pagados", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 8),
-                              mesesPagados.isEmpty
-                                  ? const Text("No hay recibos pagados registrados.", style: TextStyle(color: Colors.grey))
-                                  : ListView.builder(
-                                      shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      itemCount: mesesPagados.length,
-                                      itemBuilder: (context, index) {
-                                        final item = mesesPagados[index];
-                                        return Card(
-                                          child: ListTile(
-                                            title: Text("Recibo: ${item['recibo'] ?? item['CAJA'] ?? 'N/A'}"),
-                                            subtitle: Text("Fecha/Monto: S/ ${item['monto'] ?? item['TOTAL'] ?? '0.00'}"),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-    );
-  }
-}
-
 // ==========================================
 // 5. PANTALLA DE CONTROL PREDIAL Y TRIBUTOS (CON TABS)
 // ==========================================
@@ -959,7 +784,7 @@ class _PredialScreenState extends State<PredialScreen> {
                       label: const Text("Predios", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       onPressed: () {
                         final String usuarioId = ModalRoute.of(context)!.settings.arguments as String? ?? "";
-                        _mostrarPrediosAnio(usuarioId, anioFiscal.toString());
+                        _mostrarPrediosAnio(anioFiscal.toString(), usuarioId);
                       },
                     ),
                   ],
@@ -1037,7 +862,7 @@ class _PredialScreenState extends State<PredialScreen> {
                       label: const Text("Predios", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       onPressed: () {
                         final String usuarioId = ModalRoute.of(context)!.settings.arguments as String? ?? "";
-                        _mostrarPrediosAnio(usuarioId, anioFiscal.toString());
+                        _mostrarPrediosAnio(anioFiscal.toString(), usuarioId);
                       },
                     ),
                   ],
