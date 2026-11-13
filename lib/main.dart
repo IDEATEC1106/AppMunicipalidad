@@ -328,6 +328,9 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
   List<dynamic> mesesPendientes = [];
   List<dynamic> mesesPagados = [];
 
+  // Conjunto para llevar el registro de los períodos seleccionados para pago múltiple
+  final Set<String> _periodosSeleccionados = {};
+
   @override
   void initState() {
     super.initState();
@@ -338,6 +341,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     setState(() {
       isLoading = true;
       errorMessage = "";
+      _periodosSeleccionados.clear();
     });
 
     try {
@@ -376,6 +380,7 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     setState(() {
       predioSeleccionadoId = idPredio;
       isLoadingDetalle = true;
+      _periodosSeleccionados.clear();
     });
 
     try {
@@ -409,41 +414,53 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     }
   }
 
-  // Función para procesar el pago de arbitrios mediante el Banco de la Nación
-  Future<void> _iniciarPagoBancoNacion(BuildContext dialogContext, String periodo, String monto) async {
-    // Cerramos el modal de detalle previo
-    Navigator.pop(dialogContext);
+  // Función para procesar el pago consolidado (lote) de arbitrios mediante Banco de la Nación
+  Future<void> _procesarPagoLoteSeleccionado() async {
+    double montoTotalLote = 0.0;
+    List<String> listaRecibosList = [];
 
-    // Mostramos indicador de progreso
+    for (var item in mesesPendientes) {
+      final periodo = (item['Mes_Deuda'] ?? item['PERIODO'] ?? item['ano'] ?? 'N/A').toString();
+      if (_periodosSeleccionados.contains(periodo)) {
+        listaRecibosList.add(periodo);
+        double montoItem = double.tryParse((item['Total_Pendiente'] ?? item['TOTAL'] ?? item['deuda'] ?? '0').toString()) ?? 0.0;
+        montoTotalLote += montoItem;
+      }
+    }
+
+    String listaRecibosStr = listaRecibosList.join(',');
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Colors.amber),
-      ),
+      builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.amber)),
     );
 
     try {
       final response = await http.post(
-        Uri.parse('$apiUrl/api/pagos/generar-orden'),
+        Uri.parse('$apiUrl/api/pagos/generar-lote'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "id_contri": idContriA ?? widget.rucLe,
           "id_predio": predioSeleccionadoId,
-          "periodo": periodo,
-          "monto": monto,
+          "lista_recibos": listaRecibosStr,
+          "monto_total": montoTotalLote.toStringAsFixed(2),
           "concepto": "ARBITRIOS"
         }),
       );
 
       if (!mounted) return;
-      Navigator.pop(context); // Ocultar indicador
+      Navigator.pop(context); // Ocultar carga
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final codigoPago = data['codigo_pago'] ?? "BN-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}";
+        final codigoPagoUnico = data['codigo_pago_unico'] ?? "LOTE-${DateTime.now().millisecondsSinceEpoch}";
 
-        // Mostrar diálogo con las instrucciones y código de pago del Banco de la Nación
+        setState(() {
+          _periodosSeleccionados.clear();
+        });
+
+        // Mostrar instrucciones para pago en Banco de la Nación
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -452,20 +469,21 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
               children: [
                 Icon(Icons.account_balance, color: Colors.amber),
                 SizedBox(width: 8),
-                Text("Banco de la Nación", style: TextStyle(color: Colors.amber, fontSize: 18)),
+                Text("Lote Generado - Banco de la Nación", style: TextStyle(color: Colors.amber, fontSize: 16)),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Orden generada exitosamente para pago en línea o ventanilla."),
-                const SizedBox(height: 12),
-                Text("Período: $periodo", style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text("Monto a Pagar: S/ $monto", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                const Text("Orden de pago consolidada generada con éxito."),
+                const SizedBox(height: 10),
+                Text("Períodos: $listaRecibosStr", style: const TextStyle(fontSize: 13, color: Colors.white70)),
+                const SizedBox(height: 6),
+                Text("Monto Total: S/ ${montoTotalLote.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.black38,
                     borderRadius: BorderRadius.circular(8),
@@ -474,16 +492,16 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("Código de Pago / Tasas:", style: TextStyle(fontSize: 12, color: Colors.white70)),
+                      const Text("Código Único de Lote / Pago:", style: TextStyle(fontSize: 11, color: Colors.white70)),
                       const SizedBox(height: 4),
-                      Text(codigoPago, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.amberAccent)),
+                      Text(codigoPagoUnico, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amberAccent)),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 const Text(
-                  "Puede cancelar usando su App Banca Móvil BN, Agentes MultiRed o agencias a nivel nacional indicando este código.",
-                  style: TextStyle(fontSize: 13, color: Colors.white60),
+                  "Realice su pago por Banca Móvil BN, Agentes MultiRed o agencias indicando este código y monto total.",
+                  style: TextStyle(fontSize: 12, color: Colors.white60),
                 ),
               ],
             ),
@@ -496,12 +514,55 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
           ),
         );
       } else {
-        _mostrarAlertaError("Error de Pago", "No se pudo generar la orden de pago con el Banco de la Nación.");
+        _mostrarAlertaError("Error", "No se pudo registrar el lote de pago en el servidor.");
       }
     } catch (e) {
       if (mounted) Navigator.pop(context);
-      _mostrarAlertaError("Error de Red", "No se pudo conectar al servicio de pagos: $e");
+      _mostrarAlertaError("Error de Red", e.toString());
     }
+  }
+
+  void _mostrarDetalleDesglose(BuildContext context, dynamic item, String periodo, String monto) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E3A1E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Desglose - Período: $periodo", 
+                style: const TextStyle(color: Colors.amber, fontSize: 18, fontWeight: FontWeight.bold)),
+              const Divider(color: Colors.white24),
+              const SizedBox(height: 8),
+              Text("• Barrido de Calles: S/ ${item['Barrido'] ?? item['BARRIDO'] ?? '0.00'}"),
+              const SizedBox(height: 6),
+              Text("• Recojo de Residuos: S/ ${item['Recojo'] ?? item['RECOJO'] ?? '0.00'}"),
+              const SizedBox(height: 6),
+              Text("• Parques y Jardines: S/ ${item['Parques'] ?? item['PARQUES'] ?? '0.00'}"),
+              const SizedBox(height: 6),
+              Text("• Serenazgo: S/ ${item['Serenazgo'] ?? item['SERENAZGO'] ?? '0.00'}"),
+              const SizedBox(height: 6),
+              Text("• Intereses: S/ ${item['Intereses'] ?? item['INTERESES'] ?? '0.00'}"),
+              const Divider(color: Colors.white24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Total Pendiente:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text("S/ $monto", style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _mostrarAlertaError(String titulo, String mensaje) {
@@ -623,86 +684,64 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                     children: [
                                       mesesPendientes.isEmpty
                                         ? const Center(child: Text("No registra deudas pendientes."))
-                                        : ListView.builder(
-                                            itemCount: mesesPendientes.length,
-                                            itemBuilder: (context, index) {
-                                              final item = mesesPendientes[index];
-                                              final periodo = item['Mes_Deuda'] ?? item['PERIODO'] ?? item['ano'] ?? 'N/A';
-                                              final monto = item['Total_Pendiente'] ?? item['TOTAL'] ?? item['deuda'] ?? '0.00';
-                                              
-                                              return Card(
-                                                child: ListTile(
-                                                  leading: const Icon(Icons.calendar_today, color: Colors.orange),
-                                                  title: Text("Período / Mes: $periodo"),
-                                                  trailing: Row(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Text("S/ $monto", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
-                                                      const SizedBox(width: 8),
-                                                      const Icon(Icons.chevron_right, color: Colors.white54),
-                                                    ],
-                                                  ),
-                                                  onTap: () {
-                                                    // Muestra la ventana emergente con el desglose de deuda pendiente y opción de pago
-                                                    showModalBottomSheet(
-                                                      context: context,
-                                                      backgroundColor: const Color(0xFF1E3A1E),
-                                                      shape: const RoundedRectangleBorder(
-                                                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                        : Column(
+                                            children: [
+                                              Expanded(
+                                                child: ListView.builder(
+                                                  itemCount: mesesPendientes.length,
+                                                  itemBuilder: (context, index) {
+                                                    final item = mesesPendientes[index];
+                                                    final periodo = (item['Mes_Deuda'] ?? item['PERIODO'] ?? item['ano'] ?? 'N/A').toString();
+                                                    final monto = (item['Total_Pendiente'] ?? item['TOTAL'] ?? item['deuda'] ?? '0.00').toString();
+                                                    final bool estaSeleccionado = _periodosSeleccionados.contains(periodo);
+
+                                                    return Card(
+                                                      child: CheckboxListTile(
+                                                        title: Text("Período / Mes: $periodo"),
+                                                        subtitle: Text("Monto: S/ $monto", style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                                                        value: estaSeleccionado,
+                                                        activeColor: Colors.amber,
+                                                        checkColor: const Color(0xFF0D3B0D),
+                                                        secondary: IconButton(
+                                                          icon: const Icon(Icons.info_outline, color: Colors.amber),
+                                                          onPressed: () => _mostrarDetalleDesglose(context, item, periodo, monto),
+                                                        ),
+                                                        onChanged: (bool? valor) {
+                                                          setState(() {
+                                                            if (valor == true) {
+                                                              _periodosSeleccionados.add(periodo);
+                                                            } else {
+                                                              _periodosSeleccionados.remove(periodo);
+                                                            }
+                                                          });
+                                                        },
                                                       ),
-                                                      builder: (modalContext) {
-                                                        return Padding(
-                                                          padding: const EdgeInsets.all(20.0),
-                                                          child: Column(
-                                                            mainAxisSize: MainAxisSize.min,
-                                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                                            children: [
-                                                              Text("Detalle de Deuda - Período: $periodo", 
-                                                                style: const TextStyle(color: Colors.amber, fontSize: 18, fontWeight: FontWeight.bold)),
-                                                              const Divider(color: Colors.white24),
-                                                              const SizedBox(height: 8),
-                                                              Text("• Barrido de Calles: S/ ${item['Barrido'] ?? item['BARRIDO'] ?? '0.00'}"),
-                                                              const SizedBox(height: 6),
-                                                              Text("• Recojo de Residuos: S/ ${item['Recojo'] ?? item['RECOJO'] ?? '0.00'}"),
-                                                              const SizedBox(height: 6),
-                                                              Text("• Parques y Jardines: S/ ${item['Parques'] ?? item['PARQUES'] ?? '0.00'}"),
-                                                              const SizedBox(height: 6),
-                                                              Text("• Serenazgo: S/ ${item['Serenazgo'] ?? item['SERENAZGO'] ?? '0.00'}"),
-                                                              const SizedBox(height: 6),
-                                                              Text("• Intereses: S/ ${item['Intereses'] ?? item['INTERESES'] ?? '0.00'}"),
-                                                              const Divider(color: Colors.white24),
-                                                              Row(
-                                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                                children: [
-                                                                  const Text("Total Pendiente:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                                                  Text("S/ $monto", style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 16)),
-                                                                ],
-                                                              ),
-                                                              const SizedBox(height: 20),
-                                                              SizedBox(
-                                                                width: double.infinity,
-                                                                height: 48,
-                                                                child: ElevatedButton.icon(
-                                                                  style: ElevatedButton.styleFrom(
-                                                                    backgroundColor: Colors.amber,
-                                                                    foregroundColor: const Color(0xFF0D3B0D),
-                                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                                                  ),
-                                                                  icon: const Icon(Icons.account_balance),
-                                                                  label: const Text("PAGAR VÍA BANCO DE LA NACIÓN", style: TextStyle(fontWeight: FontWeight.bold)),
-                                                                  onPressed: () => _iniciarPagoBancoNacion(modalContext, periodo.toString(), monto.toString()),
-                                                                ),
-                                                              ),
-                                                              const SizedBox(height: 10),
-                                                            ],
-                                                          ),
-                                                        );
-                                                      },
                                                     );
                                                   },
                                                 ),
-                                              );
-                                            },
+                                              ),
+                                              if (_periodosSeleccionados.isNotEmpty)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                                  child: SizedBox(
+                                                    width: double.infinity,
+                                                    height: 50,
+                                                    child: ElevatedButton.icon(
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: Colors.amber,
+                                                        foregroundColor: const Color(0xFF0D3B0D),
+                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                      ),
+                                                      icon: const Icon(Icons.account_balance),
+                                                      label: Text(
+                                                        "PAGAR SELECCIONADOS (${_periodosSeleccionados.length})",
+                                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                                      ),
+                                                      onPressed: _procesarPagoLoteSeleccionado,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
                                           ),
                                       mesesPagados.isEmpty
                                         ? const Center(child: Text("No registra recibos pagados."))
@@ -730,7 +769,6 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                                     ],
                                                   ),
                                                   onTap: () {
-                                                    // Muestra la ventana emergente con el detalle del pago realizado
                                                     showModalBottomSheet(
                                                       context: context,
                                                       backgroundColor: const Color(0xFF1E3A1E),
