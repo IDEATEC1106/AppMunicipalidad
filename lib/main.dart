@@ -409,6 +409,112 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
     }
   }
 
+  // Función para procesar el pago de arbitrios mediante el Banco de la Nación
+  Future<void> _iniciarPagoBancoNacion(BuildContext dialogContext, String periodo, String monto) async {
+    // Cerramos el modal de detalle previo
+    Navigator.pop(dialogContext);
+
+    // Mostramos indicador de progreso
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Colors.amber),
+      ),
+    );
+
+    try {
+      final response = await http.post(
+        Uri.parse('$apiUrl/api/pagos/generar-orden'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "id_contri": idContriA ?? widget.rucLe,
+          "id_predio": predioSeleccionadoId,
+          "periodo": periodo,
+          "monto": monto,
+          "concepto": "ARBITRIOS"
+        }),
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context); // Ocultar indicador
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final codigoPago = data['codigo_pago'] ?? "BN-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}";
+
+        // Mostrar diálogo con las instrucciones y código de pago del Banco de la Nación
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1E3A1E),
+            title: const Row(
+              children: [
+                Icon(Icons.account_balance, color: Colors.amber),
+                SizedBox(width: 8),
+                Text("Banco de la Nación", style: TextStyle(color: Colors.amber, fontSize: 18)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Orden generada exitosamente para pago en línea o ventanilla."),
+                const SizedBox(height: 12),
+                Text("Período: $periodo", style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text("Monto a Pagar: S/ $monto", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black38,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Código de Pago / Tasas:", style: TextStyle(fontSize: 12, color: Colors.white70)),
+                      const SizedBox(height: 4),
+                      Text(codigoPago, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.amberAccent)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  "Puede cancelar usando su App Banca Móvil BN, Agentes MultiRed o agencias a nivel nacional indicando este código.",
+                  style: TextStyle(fontSize: 13, color: Colors.white60),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("ENTENDIDO", style: TextStyle(color: Colors.amber)),
+              ),
+            ],
+          ),
+        );
+      } else {
+        _mostrarAlertaError("Error de Pago", "No se pudo generar la orden de pago con el Banco de la Nación.");
+      }
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      _mostrarAlertaError("Error de Red", "No se pudo conectar al servicio de pagos: $e");
+    }
+  }
+
+  void _mostrarAlertaError(String titulo, String mensaje) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(titulo),
+        content: Text(mensaje),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("Aceptar"))],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final totalVal = resumenDeuda['deuda_total'] ?? resumenDeuda['TOTAL'] ?? resumenDeuda['total_deuda'] ?? '0.00';
@@ -537,14 +643,14 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                                     ],
                                                   ),
                                                   onTap: () {
-                                                    // Muestra la ventana emergente con el desglose de deuda pendiente
+                                                    // Muestra la ventana emergente con el desglose de deuda pendiente y opción de pago
                                                     showModalBottomSheet(
                                                       context: context,
                                                       backgroundColor: const Color(0xFF1E3A1E),
                                                       shape: const RoundedRectangleBorder(
                                                         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                                                       ),
-                                                      builder: (context) {
+                                                      builder: (modalContext) {
                                                         return Padding(
                                                           padding: const EdgeInsets.all(20.0),
                                                           child: Column(
@@ -572,7 +678,22 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                                                   Text("S/ $monto", style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 16)),
                                                                 ],
                                                               ),
-                                                              const SizedBox(height: 16),
+                                                              const SizedBox(height: 20),
+                                                              SizedBox(
+                                                                width: double.infinity,
+                                                                height: 48,
+                                                                child: ElevatedButton.icon(
+                                                                  style: ElevatedButton.styleFrom(
+                                                                    backgroundColor: Colors.amber,
+                                                                    foregroundColor: const Color(0xFF0D3B0D),
+                                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                                  ),
+                                                                  icon: const Icon(Icons.account_balance),
+                                                                  label: const Text("PAGAR VÍA BANCO DE LA NACIÓN", style: TextStyle(fontWeight: FontWeight.bold)),
+                                                                  onPressed: () => _iniciarPagoBancoNacion(modalContext, periodo.toString(), monto.toString()),
+                                                                ),
+                                                              ),
+                                                              const SizedBox(height: 10),
                                                             ],
                                                           ),
                                                         );
