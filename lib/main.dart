@@ -692,19 +692,23 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                                   itemBuilder: (context, index) {
                                                     final item = mesesPendientes[index];
                                                     final periodo = (item['Mes_Deuda'] ?? item['PERIODO'] ?? item['ano'] ?? 'N/A').toString();
-                                                    final monto = (item['Total_Pendiente'] ?? item['TOTAL'] ?? item['deuda'] ?? '0.00').toString();
+                                                    
+                                                    // Normalizamos y leemos correctamente el monto asegurando que sea numérico
+                                                    final montoStr = (item['Total_Pendiente'] ?? item['TOTAL'] ?? item['deuda'] ?? '0.00').toString();
+                                                    final double montoVal = double.tryParse(montoStr) ?? 0.0;
+                                                    
                                                     final bool estaSeleccionado = _periodosSeleccionados.contains(periodo);
-
+                                      
                                                     return Card(
                                                       child: CheckboxListTile(
                                                         title: Text("Período / Mes: $periodo"),
-                                                        subtitle: Text("Monto: S/ $monto", style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                                                        subtitle: Text("Monto: S/ ${montoVal.toStringAsFixed(2)}", style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
                                                         value: estaSeleccionado,
                                                         activeColor: Colors.amber,
                                                         checkColor: const Color(0xFF0D3B0D),
                                                         secondary: IconButton(
                                                           icon: const Icon(Icons.info_outline, color: Colors.amber),
-                                                          onPressed: () => _mostrarDetalleDesglose(context, item, periodo, monto),
+                                                          onPressed: () => _mostrarDetalleDesglose(context, item, periodo, montoVal.toStringAsFixed(2)),
                                                         ),
                                                         onChanged: (bool? valor) {
                                                           setState(() {
@@ -720,26 +724,41 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
                                                   },
                                                 ),
                                               ),
+                                              // Botón inferior dinámico que calcula la suma total en tiempo real
                                               if (_periodosSeleccionados.isNotEmpty)
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                                  child: SizedBox(
-                                                    width: double.infinity,
-                                                    height: 50,
-                                                    child: ElevatedButton.icon(
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.amber,
-                                                        foregroundColor: const Color(0xFF0D3B0D),
-                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                Builder(
+                                                  builder: (context) {
+                                                    // Calculamos el monto total sumando únicamente los seleccionados
+                                                    double sumaTotalSeleccionada = 0.0;
+                                                    for (var item in mesesPendientes) {
+                                                      final periodo = (item['Mes_Deuda'] ?? item['PERIODO'] ?? item['ano'] ?? 'N/A').toString();
+                                                      if (_periodosSeleccionados.contains(periodo)) {
+                                                        final montoStr = (item['Total_Pendiente'] ?? item['TOTAL'] ?? item['deuda'] ?? '0.00').toString();
+                                                        sumaTotalSeleccionada += double.tryParse(montoStr) ?? 0.0;
+                                                      }
+                                                    }
+                                      
+                                                    return Container(
+                                                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                                      child: SizedBox(
+                                                        width: double.infinity,
+                                                        height: 52,
+                                                        child: ElevatedButton.icon(
+                                                          style: ElevatedButton.styleFrom(
+                                                            backgroundColor: Colors.amber,
+                                                            foregroundColor: const Color(0xFF0D3B0D),
+                                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                          ),
+                                                          icon: const Icon(Icons.account_balance),
+                                                          label: Text(
+                                                            "PAGAR (${_periodosSeleccionados.length}) - S/ ${sumaTotalSeleccionada.toStringAsFixed(2)}",
+                                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                                          ),
+                                                          onPressed: _procesarPagoLoteSeleccionado,
+                                                        ),
                                                       ),
-                                                      icon: const Icon(Icons.account_balance),
-                                                      label: Text(
-                                                        "PAGAR SELECCIONADOS (${_periodosSeleccionados.length})",
-                                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                                      ),
-                                                      onPressed: _procesarPagoLoteSeleccionado,
-                                                    ),
-                                                  ),
+                                                    );
+                                                  },
                                                 ),
                                             ],
                                           ),
