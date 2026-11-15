@@ -514,7 +514,11 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
           ),
         );
       } else {
-        _mostrarAlertaError("Error", "No se pudo registrar el lote de pago en el servidor.");
+        // AQUÍ CAPTURAMOS Y MOSTRAMOS EL ERROR EXACTO DEL BACKEND
+        _mostrarAlertaError(
+          "Respuesta del Servidor (${response.statusCode})", 
+          response.body.isNotEmpty ? response.body : "No se pudo registrar el lote de pago en el servidor."
+        );
       }
     } catch (e) {
       if (mounted) Navigator.pop(context);
