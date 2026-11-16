@@ -441,11 +441,12 @@ class _ArbitriosScreenState extends State<ArbitriosScreen> {
         Uri.parse('$apiUrl/api/pagos/generar-lote'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "id_contri": idContriA ?? widget.rucLe,
-          "id_predio": predioSeleccionadoId,
-          "lista_recibos": listaRecibosStr,
-          "monto_total": montoTotalLote.toStringAsFixed(2),
-          "concepto": "ARBITRIOS"
+        "id_contri": idContriA ?? widget.rucLe,
+        "id_predio": predioSeleccionadoId,
+        "lista_recibos": listaRecibosStr,
+        "cantidad_rec": _periodosSeleccionados.length, // <--- Conteo exacto desde el Set
+        "monto_total": montoTotalLote.toStringAsFixed(2),
+        "concepto": "ARBITRIOS"
         }),
       );
 
